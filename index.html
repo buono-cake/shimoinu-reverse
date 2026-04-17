@@ -401,33 +401,6 @@ async function unlockAudioContext(){
     }catch(e){}
 }
 
-// ===== SEアンロック（スマホChrome対策） =====
-// ユーザー操作の同期スタック内で全SEを volume=0 で play→pause する。
-// pause() はPromiseが解決した後に非同期で呼ぶが、
-// 「一度でも play() が呼ばれた」という記録がブラウザに残るため
-// 以後はどこからでも play() が成功するようになる。
-// BGM系は除外（別途 playBGM で管理）。
-function unlockSEAudios(){
-    const seAudios=[
-        ...reversePlayerSounds,...reverseCpuSounds,
-        winSeAudio,winSAudio,clapAudio,
-        loseSeAudio,loseSakebiAudio,drumRoalAudio,
-        drawSeAudio,drawVoiceAudio,drawResultAudio,
-        ...winResultSoundsArray,...loseResultSoundsArray
-    ];
-    seAudios.forEach(audio=>{
-        if(!audio)return;
-        const orig=audio.volume;
-        audio.volume=0;
-        const p=audio.play();
-        if(p&&typeof p.then==='function'){
-            p.then(()=>{audio.pause();audio.currentTime=0;audio.volume=orig;}).catch(()=>{audio.volume=orig;});
-        }else{
-            audio.pause();audio.currentTime=0;audio.volume=orig;
-        }
-    });
-}
-
 function playSound(audio){
     if(!soundEnabled||!seEnabled||!audio)return;
     audio.currentTime=0;audio.volume=voiceVolume;
@@ -445,13 +418,15 @@ function stopAllBGM(){
 function playSoundAndWait(audio,maxWaitMs){
     return new Promise(resolve=>{
         if(!audio||!soundEnabled||!seEnabled){resolve();return;}
-        audio.currentTime=0;audio.volume=voiceVolume;
+        // cloneNode で新しいインスタンスを使う（onended の競合を防ぐ）
+        const a=audio.cloneNode();
+        a.volume=voiceVolume;
         let done=false;
         const finish=()=>{if(done)return;done=true;resolve();};
         const timeout=setTimeout(finish,maxWaitMs);
-        audio.onended=()=>{clearTimeout(timeout);finish();};
-        audio.onerror=()=>{clearTimeout(timeout);finish();};
-        audio.play().catch(()=>{clearTimeout(timeout);finish();});
+        a.onended=()=>{clearTimeout(timeout);finish();};
+        a.onerror=()=>{clearTimeout(timeout);finish();};
+        a.play().catch(()=>{clearTimeout(timeout);finish();});
     });
 }
 
@@ -547,14 +522,14 @@ async function placePiece(r,c,placingColor){
                 let fi=placingColor===1?blackPieceImgs[Math.floor(Math.random()*blackPieceImgs.length)]:(Math.random()<1/1017?whiteSpecialImg:whitePieceImgs[Math.floor(Math.random()*whitePieceImgs.length)]);
                 pieceVariant[fr][fc]=fi;drawBoard();
                 if(chosenRev&&soundEnabled&&seEnabled){
-                    // onendedを play() より先にセット（再生開始前に ended にならないよう）
+                    // cloneNodeで競合回避。onendedをplay前にセット
+                    const revClone=chosenRev.cloneNode();
+                    revClone.volume=voiceVolume;
                     let revResolved=false;
                     const revDone=()=>{if(!revResolved){revResolved=true;resolve();}};
-                    chosenRev.onended=revDone;
-                    chosenRev.onerror=revDone;
-                    chosenRev.currentTime=0;chosenRev.volume=voiceVolume;
-                    chosenRev.play().catch(revDone);
-                    // フォールバック（音声が極端に短い・ended状態のまま等）
+                    revClone.onended=revDone;
+                    revClone.onerror=revDone;
+                    revClone.play().catch(revDone);
                     setTimeout(revDone,3000);
                 }else resolve();
             },i*30);
@@ -1008,8 +983,7 @@ function setupEvents(){
             titleBGM.volume=bgmVolume;
             titleBGM.play().catch(()=>{});
         }
-        // BGMはplay()で許可済み。SEも同タイミングでアンロック
-        unlockSEAudios();
+        // BGMはplay()で許可済み。
         unlockAudioContext().catch(()=>{});
     });
     document.getElementById('bgm-no-btn').addEventListener('click',()=>{
@@ -1045,7 +1019,6 @@ function startGame(){
         const bgm=cpuStrength==='愉悦'?yuetsuBGM:bgmAudio;
         if(bgm){bgm.currentTime=0;bgm.volume=bgmVolume;bgm.play().catch(()=>{});}
     }
-    unlockSEAudios();  // ★BGMなし選択者向けSEアンロック
     unlockAudioContext().catch(()=>{});
     document.getElementById('title-screen').style.display='none';
     document.getElementById('game-screen').style.display='flex';
