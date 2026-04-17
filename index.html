@@ -70,7 +70,7 @@
             width: 100%; height: 100%; z-index: 3;
         }
 
-        /* ====================== PC版：左（自分）→ 盤 → 右（相手） ====================== */
+        /* PC版：左（自分）→ 盤 → 右（相手） */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -101,7 +101,7 @@
             .opponent-info { order: 3; }
         }
 
-        /* ====================== スマホ縦版：盤を小さくして1画面にすべて収まる ====================== */
+        /* スマホ縦版 */
         @media (max-width: 768px) {
             #board-container { 
                 width: 92vmin !important; 
@@ -111,7 +111,6 @@
                 padding: 10px; 
             }
             
-            /* スマホ版アイコン：盤の上部に横並び（自分左・相手右） */
             .icon-bar {
                 width: 92vmin;
                 margin: 0 auto 10px;
@@ -120,9 +119,7 @@
                 align-items: center;
                 padding: 0 15px;
             }
-            .icon-bar .side-info {
-                text-align: center;
-            }
+            .icon-bar .side-info { text-align: center; }
             .icon-bar .char-img {
                 width: 68px;
                 height: 68px;
