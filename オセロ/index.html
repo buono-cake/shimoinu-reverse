@@ -70,7 +70,7 @@
             width: 100%; height: 100%; z-index: 3;
         }
 
-        /* ====================== PC版：左（自分）→ 盤 → 右（相手） ====================== */
+        /* PC版：左（自分）→ 盤 → 右（相手） */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -101,7 +101,7 @@
             .opponent-info { order: 3; }
         }
 
-        /* ====================== スマホ縦版：盤を小さくして1画面にすべて収まる ====================== */
+        /* スマホ縦版 */
         @media (max-width: 768px) {
             #board-container { 
                 width: 92vmin !important; 
@@ -111,7 +111,6 @@
                 padding: 10px; 
             }
             
-            /* スマホ版アイコン：盤の上部に横並び（自分左・相手右） */
             .icon-bar {
                 width: 92vmin;
                 margin: 0 auto 10px;
@@ -120,9 +119,7 @@
                 align-items: center;
                 padding: 0 15px;
             }
-            .icon-bar .side-info {
-                text-align: center;
-            }
+            .icon-bar .side-info { text-align: center; }
             .icon-bar .char-img {
                 width: 68px;
                 height: 68px;
@@ -251,11 +248,6 @@
         .link-area { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; margin-bottom:18px; }
         .link-area a { text-decoration:none; padding:11px 32px; border-radius:50px; font-size:clamp(0.98rem, 2.4vw, 1.15rem); font-weight:700; box-shadow:0 6px 14px rgba(0,0,0,0.3); }
 
-        .youtube-container { display: flex; gap: 28px; justify-content: center; width: 94%; max-width: 1080px; }
-        .youtube-column { flex: 1; min-width: 270px; }
-        .youtube-title { font-size: clamp(1.1rem, 2.5vw, 1.35rem); font-weight: 700; margin-bottom: 8px; text-align: center; color: #0a3d0a; }
-        .youtube-embed iframe { width: 100%; height: clamp(170px, 32vw, 210px); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-
         .credit { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; font-size: clamp(0.85rem, 2vw, 0.95rem); color: #0a3d0a; opacity: 0.85; margin-top: 15px; }
 
         #result-screen { background: linear-gradient(135deg, #e0f7ff, #b0e0ff); color: #0a3d0a; }
@@ -325,19 +317,6 @@
         <div class="link-area">
             <a href="https://x.com/shimoinu_reina" target="_blank" style="background:#1DA1F2;color:#fff;">霜戌レイナ Twitter</a>
             <a href="https://www.youtube.com/channel/UCQsuThhsBtHln3nCOcX-pfg" target="_blank" style="background:#FF0000;color:#fff;">Reina Ch. YouTube</a>
-        </div>
-        
-        <div class="youtube-container">
-            <div class="youtube-column">
-                <div class="youtube-title">最新配信</div>
-                <div id="latest-embed" class="youtube-embed"></div>
-                <p id="no-latest-message" style="display:none;text-align:center;color:#d32f2f;font-size:0.95rem;">取得失敗</p>
-            </div>
-            <div class="youtube-column">
-                <div class="youtube-title">次回の配信予定</div>
-                <div id="upcoming-embed" class="youtube-embed"></div>
-                <p id="no-stream-message" style="display:none;text-align:center;color:#d32f2f;font-size:0.95rem;">取得失敗</p>
-            </div>
         </div>
         
         <div class="credit">
@@ -1089,105 +1068,6 @@ function createSnowflakes() {
     }
 }
 
-const API_KEY = 'AIzaSyAeaUmJu-vrvPkE-x4SJZZIRy1hbRL5jbo';
-const CHANNEL_ID = 'UCQsuThhsBtHln3nCOcX-pfg';
-
-async function fetchLatestStream() {
-    const embedContainer = document.getElementById('latest-embed');
-    const noMessage = document.getElementById('no-latest-message');
-    try {
-        const searchResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=completed&type=video&order=date&maxResults=1&key=${API_KEY}`);
-        const searchData = await searchResponse.json();
-        if (searchData.items && searchData.items.length > 0) {
-            const videoId = searchData.items[0].id.videoId;
-            const title = searchData.items[0].snippet.title;
-            const videoResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoId}&key=${API_KEY}`);
-            const videoData = await videoResponse.json();
-            let scheduledDate = new Date(searchData.items[0].snippet.publishedAt).toLocaleDateString('ja-JP');
-            if (videoData.items[0].liveStreamingDetails && videoData.items[0].liveStreamingDetails.actualStartTime) {
-                scheduledDate = new Date(videoData.items[0].liveStreamingDetails.actualStartTime).toLocaleDateString('ja-JP');
-            }
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
-            iframe.width = '100%';
-            iframe.height = '210';
-            iframe.frameBorder = '0';
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            iframe.allowFullscreen = true;
-            embedContainer.appendChild(iframe);
-            const infoPara = document.createElement('p');
-            const link = document.createElement('a');
-            link.href = `https://www.youtube.com/watch?v=${videoId}`;
-            link.target = '_blank';
-            link.textContent = title;
-            infoPara.appendChild(link);
-            infoPara.appendChild(document.createTextNode(` | 配信日: ${scheduledDate}`));
-            embedContainer.appendChild(infoPara);
-        } else {
-            noMessage.style.display = 'block';
-        }
-    } catch (error) {
-        console.error(error);
-        noMessage.style.display = 'block';
-    }
-}
-
-async function fetchUpcomingStream() {
-    const embedContainer = document.getElementById('upcoming-embed');
-    const noStreamMessage = document.getElementById('no-stream-message');
-    try {
-        const response = await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=upcoming&type=video&order=date&maxResults=10&key=${API_KEY}`);
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-            const videoIds = data.items.map(item => item.id.videoId).join(',');
-            const videoResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoIds}&key=${API_KEY}`);
-            const videoData = await videoResponse.json();
-            const now = new Date().getTime();
-            let closestStream = null;
-            let minDiff = Infinity;
-            videoData.items.forEach(item => {
-                const scheduledStartTime = item.liveStreamingDetails?.scheduledStartTime;
-                if (scheduledStartTime) {
-                    const startTime = new Date(scheduledStartTime).getTime();
-                    const diff = startTime - now;
-                    if (diff > 0 && diff < minDiff) {
-                        minDiff = diff;
-                        closestStream = item;
-                    }
-                }
-            });
-            if (closestStream) {
-                const videoId = closestStream.id;
-                const title = closestStream.snippet.title;
-                const scheduledTime = new Date(closestStream.liveStreamingDetails.scheduledStartTime).toLocaleString('ja-JP');
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
-                iframe.width = '100%';
-                iframe.height = '210';
-                iframe.frameBorder = '0';
-                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-                iframe.allowFullscreen = true;
-                embedContainer.appendChild(iframe);
-                const infoPara = document.createElement('p');
-                const link = document.createElement('a');
-                link.href = `https://www.youtube.com/watch?v=${videoId}`;
-                link.target = '_blank';
-                link.textContent = title;
-                infoPara.appendChild(link);
-                infoPara.appendChild(document.createTextNode(` | 予定日時: ${scheduledTime}`));
-                embedContainer.appendChild(infoPara);
-            } else {
-                noStreamMessage.style.display = 'block';
-            }
-        } else {
-            noStreamMessage.style.display = 'block';
-        }
-    } catch (error) {
-        console.error(error);
-        noStreamMessage.style.display = 'block';
-    }
-}
-
 function init() {
     initBoard();
     initAudio();
@@ -1205,9 +1085,6 @@ function init() {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         resizeCanvas();
     });
-    
-    fetchLatestStream();
-    fetchUpcomingStream();
 }
 
 window.onload = init;
