@@ -390,54 +390,27 @@ function initAudio(){
 }
 
 // ===== AudioContextアンロック =====
-// ★根本修正：BGM系（bgmAudio/titleBGM/yuetsuBGM/yuetsuUnlockBGM）は
-//   play→pause リストから除外する。
-//   SEのみ play→pause し、pauseまで50ms待機してから音量を戻す。
-//   これによりスマホで最初に全音が流れる問題を解消。
+// 【重要】play→pause によるアンロックは行わない。
+// スマホChromeは「ユーザーがページを操作した」時点で
+// そのページ内の全 audio.play() が許可される。
+// 「はい」ボタン等のユーザー操作ハンドラから呼ばれる時点で
+// AudioContext を resume するだけで十分。
+// play→pause を行うと volume=0 でも音声が流れてしまう。
 async function unlockAudioContext(){
     if(audioContextUnlocked)return;
     audioContextUnlocked=true;
-
-    // AudioContext resume
     try{
         const AC=window.AudioContext||window.webkitAudioContext;
         if(AC){
             const ac=new AC();
             await ac.resume().catch(()=>{});
+            // 無音の極短パルスだけ鳴らしてコンテキストをアクティブ化
             const osc=ac.createOscillator(),g=ac.createGain();
             g.gain.value=0;osc.connect(g);g.connect(ac.destination);
             osc.start(0);osc.stop(0.001);
         }
     }catch(e){}
-
-    // SE系のみ play→pause でアンロック（BGM系は除外）
-    const seAudios=[
-        ...reversePlayerSounds,...reverseCpuSounds,
-        winSeAudio,winSAudio,clapAudio,loseSeAudio,loseSakebiAudio,
-        drumRoalAudio,drawSeAudio,drawVoiceAudio,drawResultAudio,
-        ...winResultSoundsArray,...loseResultSoundsArray
-    ];
-    await Promise.all(seAudios.map(audio=>{
-        if(!audio)return Promise.resolve();
-        return new Promise(resolve=>{
-            const orig=audio.volume;
-            audio.volume=0;
-            const p=audio.play();
-            if(p&&typeof p.then==='function'){
-                p.then(()=>{
-                    // 50ms後にpause（再生が安定してから止める）
-                    setTimeout(()=>{
-                        audio.pause();
-                        audio.currentTime=0;
-                        audio.volume=orig;
-                        resolve();
-                    },50);
-                }).catch(()=>{audio.volume=orig;resolve();});
-            }else{
-                setTimeout(()=>{audio.pause();audio.currentTime=0;audio.volume=orig;resolve();},50);
-            }
-        });
-    }));
+    // ※ play→pause は一切行わない
 }
 
 function playSound(audio){
