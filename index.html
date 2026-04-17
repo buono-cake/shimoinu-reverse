@@ -70,7 +70,7 @@
             width: 100%; height: 100%; z-index: 3;
         }
 
-        /* PC版（一切変更なし） */
+        /* ===================== PC版（一切変更なし） ===================== */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -101,41 +101,103 @@
             .opponent-info { order: 3; }
         }
 
-        /* スマホ版専用（完全に独立） */
+        /* ===================== スマホ版専用（完全に独立） ===================== */
         @media (max-width: 768px) {
-            #board-container { 
-                width: 86vmin !important; 
-                height: 86vmin !important; 
-                margin: 140px auto 20px !important; 
-                border-width: 13px; 
-                padding: 10px; 
-            }
-            
-            .smartphone-top-bar {
-                width: 86vmin;
-                margin: 12px auto 18px !important;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0 15px;
-                position: relative;
-                z-index: 30;
-            }
-            .smartphone-top-bar .side-info { text-align: center; }
-            .smartphone-top-bar .char-img {
-                width: 68px;
-                height: 68px;
-                margin-bottom: 4px;
-            }
-            .smartphone-top-bar .side-label {
-                font-size: 1.05rem;
-                font-weight: 700;
+            /* ゲーム画面全体を縦フレックスに */
+            #game-screen {
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                overflow: hidden !important;
             }
 
+            /* ゲームコンテンツラッパー */
             .game-content {
                 flex-direction: column !important;
-                padding: 0 8px 15px !important;
-                gap: 10px;
+                padding: 0 !important;
+                gap: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                position: relative !important;
+            }
+
+            /* スマホ上部バー：盤の上に絶対配置 */
+            .smartphone-top-bar {
+                position: absolute !important;
+                top: 8px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                width: 86vmin !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 0 10px !important;
+                z-index: 30 !important;
+            }
+
+            .smartphone-top-bar .side-info {
+                text-align: center;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+
+            .smartphone-top-bar .char-img {
+                width: 64px !important;
+                height: 64px !important;
+                min-width: 64px !important;
+                min-height: 64px !important;
+                margin-bottom: 3px !important;
+                border-radius: 50% !important;
+                background: #fff !important;
+                overflow: hidden !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .smartphone-top-bar .char-img img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important;
+            }
+
+            .smartphone-top-bar .side-label {
+                font-size: 0.85rem !important;
+                font-weight: 700 !important;
+                color: #fff !important;
+                text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+            }
+
+            /* PC版のサイドインフォはスマホでは非表示 */
+            #player-info-pc,
+            #opponent-info-pc {
+                display: none !important;
+            }
+
+            /* 盤を上部バーの下に配置（上部バー高さ分だけ下げる） */
+            #board-container {
+                width: 86vmin !important;
+                height: 86vmin !important;
+                /* 上部バー（アイコン64px + ラベル + padding）の高さを考慮 */
+                margin: 100px auto 0 !important;
+                border-width: 13px !important;
+                padding: 10px !important;
+                flex-shrink: 0 !important;
+            }
+
+            /* ステータスバーはbottomに固定 */
+            .status-bar {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                font-size: clamp(1.1rem, 3.5vw, 1.4rem) !important;
+                padding: 12px !important;
+                z-index: 20 !important;
             }
         }
 
@@ -367,12 +429,12 @@
             </div>
             
             <!-- スマホ版専用上部バー -->
-            <div class="smartphone-top-bar" id="smartphone-top-bar">
-                <div class="side-info player-info" id="player-info-mobile">
+            <div class="smartphone-top-bar" id="smartphone-top-bar" style="display:none;">
+                <div class="side-info" id="player-info-mobile">
                     <div class="char-img" id="player-char-img-mobile"></div>
                     <div class="side-label" id="player-label-mobile">YOU</div>
                 </div>
-                <div class="side-info opponent-info" id="opponent-info-mobile">
+                <div class="side-info" id="opponent-info-mobile">
                     <div class="char-img" id="opponent-char-img-mobile"></div>
                     <div class="side-label" id="opponent-label-mobile">ENEMY</div>
                 </div>
@@ -530,6 +592,9 @@ let drawResultAudio = null;
 let voiceVolume = 0.9;
 let bgmVolume = 0.2;
 let soundEnabled = false;
+
+// ★修正5: ゲーム終了後のBGM制御フラグ
+let resultPhaseActive = false;
 
 let currentPlayer = 1;
 let cpuStrength = 'ふつう';
@@ -726,6 +791,7 @@ const positionWeight = [
 
 function endGame() {
     gameOver = true;
+    resultPhaseActive = true; // ★修正5: リザルトフェーズ開始
     if (bgmAudio) bgmAudio.pause();
     let black = 0, white = 0;
     for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
@@ -742,9 +808,11 @@ async function runScoreAndResultSequence() {
     pieceVariant = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
     drawBoard();
     
+    // ★修正3: soundEnabled に関わらず drum_rool を再生する（集計演出音）
     if (drumRoalAudio) {
         drumRoalAudio.currentTime = 0;
-        await drumRoalAudio.play().catch(() => {});
+        drumRoalAudio.volume = voiceVolume;
+        drumRoalAudio.play().catch(() => {});
     }
     
     let blackPlaced = 0, whitePlaced = 0;
@@ -774,13 +842,17 @@ async function runScoreAndResultSequence() {
         if (didPlace) {
             setTimeout(placeNext, interval);
         } else {
-            const fallback = setTimeout(() => showWinLoseOverlayAndProceed(), 4000);
+            // ★修正3: drumRoal終了を待つ。ただし最大5秒でタイムアウト
+            const drumTimeout = setTimeout(() => {
+                showWinLoseOverlayAndProceed();
+            }, 5000);
             if (drumRoalAudio) {
                 drumRoalAudio.onended = () => {
-                    clearTimeout(fallback);
+                    clearTimeout(drumTimeout);
                     showWinLoseOverlayAndProceed();
                 };
             } else {
+                clearTimeout(drumTimeout);
                 showWinLoseOverlayAndProceed();
             }
         }
@@ -788,30 +860,47 @@ async function runScoreAndResultSequence() {
     placeNext();
 }
 
-function showWinLoseOverlayAndProceed() {
+// ★修正4・6: SE再生をPromiseベースに変更し、ended待ちの永久ループを排除
+function playSoundAndWait(audio, maxWaitMs) {
+    return new Promise(resolve => {
+        if (!audio) { resolve(); return; }
+        // soundEnabled に関わらず勝敗SEは再生する（演出として必須）
+        audio.currentTime = 0;
+        audio.volume = voiceVolume;
+        const timeout = setTimeout(resolve, maxWaitMs);
+        audio.onended = () => { clearTimeout(timeout); resolve(); };
+        audio.play().catch(() => { clearTimeout(timeout); resolve(); });
+    });
+}
+
+async function showWinLoseOverlayAndProceed() {
     const playerFinal = playerColor === 1 ? finalBlackCount : finalWhiteCount;
     const cpuFinal = playerColor === 1 ? finalWhiteCount : finalBlackCount;
     const isWin = playerFinal > cpuFinal;
     const isDraw = playerFinal === cpuFinal;
     showWinLoseOverlay(isWin ? 'win' : isDraw ? 'draw' : 'lose');
     
-    const originalVoice = voiceVolume;
     if (isWin) {
-        winSeAudio.currentTime = 0; winSeAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(winSeAudio);
-        clapAudio.currentTime = 0; clapAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(clapAudio);
-        const checkSE = () => { if (winSeAudio.ended && clapAudio.ended) { voiceVolume = originalVoice; setTimeout(showResultScreen, 300); } else setTimeout(checkSE, 40); };
-        checkSE();
+        // ★修正4: Promiseベースで両音声を並行再生し、両方終了（または最大5秒）で遷移
+        await Promise.all([
+            playSoundAndWait(winSeAudio, 5000),
+            playSoundAndWait(clapAudio, 5000)
+        ]);
     } else if (isDraw) {
-        drawSeAudio.currentTime = 0; drawSeAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(drawSeAudio);
-        drawVoiceAudio.currentTime = 0; drawVoiceAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(drawVoiceAudio);
-        const checkSE = () => { if (drawSeAudio.ended && drawVoiceAudio.ended) { voiceVolume = originalVoice; setTimeout(showResultScreen, 300); } else setTimeout(checkSE, 40); };
-        checkSE();
+        await Promise.all([
+            playSoundAndWait(drawSeAudio, 5000),
+            playSoundAndWait(drawVoiceAudio, 5000)
+        ]);
     } else {
-        loseSeAudio.currentTime = 0; loseSeAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(loseSeAudio);
-        loseSakebiAudio.currentTime = 0; loseSakebiAudio.volume = Math.max(0, voiceVolume - 0.2); playSound(loseSakebiAudio);
-        const checkSE = () => { if (loseSeAudio.ended && loseSakebiAudio.ended) { voiceVolume = originalVoice; setTimeout(showResultScreen, 300); } else setTimeout(checkSE, 40); };
-        checkSE();
+        // ★修正4: lose SEも同様にPromiseベースで再生・待機
+        await Promise.all([
+            playSoundAndWait(loseSeAudio, 5000),
+            playSoundAndWait(loseSakebiAudio, 5000)
+        ]);
     }
+    
+    // ★修正6: awaitで待機後、必ず遷移する
+    setTimeout(showResultScreen, 300);
 }
 
 function showWinLoseOverlay(type) {
@@ -831,6 +920,7 @@ function showResultScreen() {
     hideWinLoseOverlay();
     document.getElementById('game-screen').style.display = 'none';
     if (bgmAudio) bgmAudio.pause();
+    resultPhaseActive = false; // ★修正5: リザルトフェーズ終了
     const rs = document.getElementById('result-screen');
     rs.style.display = 'flex';
     
@@ -936,31 +1026,31 @@ function setupEvents() {
     const voiceSlider = document.getElementById('voice-volume-slider');
     const bgmSlider = document.getElementById('bgm-volume-slider');
     
-    function updateAllVolumes() {
+    // ★修正2: 音量を即時全オブジェクトに反映する統合関数
+    function applyVolumesToAllAudio() {
         voiceVolume = parseFloat(voiceSlider.value);
         bgmVolume = parseFloat(bgmSlider.value);
         
-        const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
+        // SE系（reversePlayer/Cpu含む全SE）
+        const allSE = [
+            ...reversePlayerSounds, ...reverseCpuSounds,
+            winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio,
+            drumRoalAudio, drawSeAudio, drawVoiceAudio,
+            ...winResultSoundsArray, ...loseResultSoundsArray,
+            drawResultAudio
+        ];
         allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
         
+        // BGM系（再生中なら音量を即時反映、再起動はしない）
         if (bgmAudio) bgmAudio.volume = bgmVolume;
         if (titleBGM) titleBGM.volume = bgmVolume;
-        
-        if (bgmAudio && !bgmAudio.paused) {
-            bgmAudio.pause();
-            bgmAudio.play().catch(() => {});
-        }
     }
     
-    voiceSlider.addEventListener('input', updateAllVolumes);
-    voiceSlider.addEventListener('change', updateAllVolumes);
-    voiceSlider.addEventListener('pointerup', updateAllVolumes);
-    voiceSlider.addEventListener('touchend', updateAllVolumes);
-    
-    bgmSlider.addEventListener('input', updateAllVolumes);
-    bgmSlider.addEventListener('change', updateAllVolumes);
-    bgmSlider.addEventListener('pointerup', updateAllVolumes);
-    bgmSlider.addEventListener('touchend', updateAllVolumes);
+    // ★修正2: input・change・pointerup・touchend 全イベントで即時反映
+    ['input', 'change', 'pointerup', 'touchend'].forEach(ev => {
+        voiceSlider.addEventListener(ev, applyVolumesToAllAudio);
+        bgmSlider.addEventListener(ev, applyVolumesToAllAudio);
+    });
     
     document.getElementById('btn-close-option').addEventListener('click', () => document.getElementById('option-modal').style.display = 'none');
     document.getElementById('btn-title-back').addEventListener('click', () => { 
@@ -1001,8 +1091,17 @@ function setupEvents() {
     toggleBtn.addEventListener('click', () => {
         soundEnabled = !soundEnabled;
         if (soundEnabled) {
-            if (titleBGM && document.getElementById('title-screen').style.display !== 'none') playSound(titleBGM);
-            else if (bgmAudio && document.getElementById('game-screen').style.display !== 'none') playSound(bgmAudio);
+            // ★修正5: リザルトフェーズ中はBGMを再開しない
+            if (resultPhaseActive) {
+                updateBgmToggleIcon();
+                return;
+            }
+            if (titleBGM && document.getElementById('title-screen').style.display !== 'none') {
+                playSound(titleBGM);
+            } else if (bgmAudio && document.getElementById('game-screen').style.display !== 'none' && !gameOver) {
+                // ★修正5: ゲームオーバー後（集計・リザルト）はBGM再開しない
+                playSound(bgmAudio);
+            }
         } else {
             if (titleBGM) titleBGM.pause();
             if (bgmAudio) bgmAudio.pause();
@@ -1021,6 +1120,7 @@ async function startGame() {
     currentPlayer = 1;
     gameOver = false;
     isFlipping = false;
+    resultPhaseActive = false; // ★修正5: ゲーム開始時にリセット
     if (titleBGM) titleBGM.pause();
     if (soundEnabled && bgmAudio) playSound(bgmAudio);
     document.getElementById('title-screen').style.display = 'none';
@@ -1041,11 +1141,15 @@ async function startGame() {
     document.getElementById('player-label-mobile').innerHTML = `YOU (${playerColor === 1 ? '黒' : '白'})`;
     document.getElementById('opponent-label-mobile').innerHTML = `ENEMY (${cpuStrength})`;
     
-    if (window.innerWidth >= 769) {
+    // ★修正1: スマホ判定を正確に行い、PCとスマホを完全に分離
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+        // PC版: PC用サイドインフォを表示、スマホバーを非表示
         document.getElementById('player-info-pc').style.display = 'flex';
         document.getElementById('opponent-info-pc').style.display = 'flex';
         document.getElementById('smartphone-top-bar').style.display = 'none';
     } else {
+        // スマホ版: PC用サイドインフォを非表示、スマホバーを表示
         document.getElementById('player-info-pc').style.display = 'none';
         document.getElementById('opponent-info-pc').style.display = 'none';
         document.getElementById('smartphone-top-bar').style.display = 'flex';
@@ -1065,6 +1169,7 @@ function goToTitle() {
     
     document.getElementById('title-screen').style.display = 'flex';
     if (bgmAudio) bgmAudio.pause();
+    resultPhaseActive = false; // ★修正5: タイトルに戻ったらリセット
     if (soundEnabled && titleBGM) playSound(titleBGM);
     gameOver = true;
     isFlipping = false;
