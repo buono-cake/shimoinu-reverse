@@ -899,9 +899,13 @@ function setupEvents(){
     document.getElementById('bgm-toggle-option-btn').addEventListener('click',()=>{
         bgmEnabled=!bgmEnabled;
         if(bgmEnabled&&soundEnabled){
-            if(titleBGM&&document.getElementById('title-screen').style.display!=='none')setTimeout(()=>playBGM(titleBGM),80);
-            else if(yuetsuBGM&&document.getElementById('game-screen').style.display!=='none'&&cpuStrength==='愉悦'&&!gameOver)setTimeout(()=>playBGM(yuetsuBGM),80);
-            else if(bgmAudio&&document.getElementById('game-screen').style.display!=='none'&&!gameOver)setTimeout(()=>playBGM(bgmAudio),80);
+            // ★同期スタック内で直接 play()
+            if(titleBGM&&document.getElementById('title-screen').style.display!=='none'){
+                titleBGM.currentTime=0;titleBGM.volume=bgmVolume;titleBGM.play().catch(()=>{});
+            }else if(document.getElementById('game-screen').style.display!=='none'&&!gameOver){
+                const bgm=cpuStrength==='愉悦'?yuetsuBGM:bgmAudio;
+                if(bgm){bgm.currentTime=0;bgm.volume=bgmVolume;bgm.play().catch(()=>{});}
+            }
         }else{stopAllBGM();}
         updateSoundToggleButtons();
     });
@@ -936,49 +940,56 @@ function setupEvents(){
     });
     document.getElementById('start-btn').addEventListener('click',startGame);
 
-    document.getElementById('bgm-yes-btn').addEventListener('click',async()=>{
+    document.getElementById('bgm-yes-btn').addEventListener('click',()=>{
         soundEnabled=true;
         document.getElementById('bgm-confirm-modal').style.display='none';
-        await unlockAudioContext();
-        setTimeout(()=>{if(soundEnabled&&bgmEnabled&&titleBGM)playBGM(titleBGM);},80);
         updateBgmToggleIcon();
+        // ★スマホChrome対策：クリックハンドラの同期スタック内で直接 play() を呼ぶ
+        // await/setTimeoutを挟むと「ユーザー操作の直接の結果」と見なされなくなる
+        if(soundEnabled&&bgmEnabled&&titleBGM){
+            titleBGM.currentTime=0;
+            titleBGM.volume=bgmVolume;
+            titleBGM.play().catch(()=>{});
+        }
+        // AudioContextのresumeは非同期でOK（BGM再生許可はplay()で得られる）
+        unlockAudioContext().catch(()=>{});
     });
     document.getElementById('bgm-no-btn').addEventListener('click',()=>{
         soundEnabled=false;
         document.getElementById('bgm-confirm-modal').style.display='none';
         updateBgmToggleIcon();
     });
-    document.getElementById('bgm-toggle-btn').addEventListener('click',async()=>{
+    document.getElementById('bgm-toggle-btn').addEventListener('click',()=>{
         soundEnabled=!soundEnabled;
         if(soundEnabled){
-            await unlockAudioContext();
             if(resultPhaseActive){updateBgmToggleIcon();return;}
-            setTimeout(()=>{
-                if(!soundEnabled||!bgmEnabled)return;
-                if(titleBGM&&document.getElementById('title-screen').style.display!=='none')playBGM(titleBGM);
-                else if(document.getElementById('game-screen').style.display!=='none'&&!gameOver){
-                    if(cpuStrength==='愉悦')playBGM(yuetsuBGM);
-                    else playBGM(bgmAudio);
-                }
-            },80);
+            // ★同期スタック内で直接 play()
+            if(!bgmEnabled){updateBgmToggleIcon();return;}
+            const onTitle=titleBGM&&document.getElementById('title-screen').style.display!=='none';
+            const onGame=document.getElementById('game-screen').style.display!=='none'&&!gameOver;
+            if(onTitle){
+                titleBGM.currentTime=0;titleBGM.volume=bgmVolume;titleBGM.play().catch(()=>{});
+            }else if(onGame){
+                const bgm=cpuStrength==='愉悦'?yuetsuBGM:bgmAudio;
+                if(bgm){bgm.currentTime=0;bgm.volume=bgmVolume;bgm.play().catch(()=>{});}
+            }
+            unlockAudioContext().catch(()=>{});
         }else{stopAllBGM();}
         updateBgmToggleIcon();
     });
 }
 function updateBgmToggleIcon(){document.getElementById('bgm-toggle-btn').textContent=soundEnabled?'▶️':'❌';}
 
-async function startGame(){
+function startGame(){
     initBoard();
     cpuColor=3-playerColor;currentPlayer=1;gameOver=false;isFlipping=false;resultPhaseActive=false;
-    if(soundEnabled)await unlockAudioContext();
     stopAllBGM();
-    // 愉悦対局中は yuetsu_bgm.mp3、それ以外は通常BGM
+    // ★同期スタック内で直接 play()（スタートボタンのクリックハンドラから呼ばれるため許可される）
     if(soundEnabled&&bgmEnabled){
-        setTimeout(()=>{
-            if(cpuStrength==='愉悦')playBGM(yuetsuBGM);
-            else playBGM(bgmAudio);
-        },80);
+        const bgm=cpuStrength==='愉悦'?yuetsuBGM:bgmAudio;
+        if(bgm){bgm.currentTime=0;bgm.volume=bgmVolume;bgm.play().catch(()=>{});}
     }
+    unlockAudioContext().catch(()=>{});
     document.getElementById('title-screen').style.display='none';
     document.getElementById('game-screen').style.display='flex';
     document.getElementById('result-screen').style.display='none';
@@ -999,7 +1010,7 @@ async function startGame(){
     setTimeout(()=>{drawBoard();checkNextTurn();},50);
 }
 
-async function goToTitle(){
+function goToTitle(){
     document.getElementById('game-screen').style.display='none';
     document.getElementById('result-screen').style.display='none';
     document.getElementById('option-modal').style.display='none';
@@ -1008,7 +1019,10 @@ async function goToTitle(){
     document.getElementById('title-screen').style.display='flex';
     stopAllBGM();
     resultPhaseActive=false;
-    if(soundEnabled&&bgmEnabled&&titleBGM)setTimeout(()=>playBGM(titleBGM),80);
+    // タイトルBGM再生（goToTitleはボタン操作から呼ばれるので直接play可）
+    if(soundEnabled&&bgmEnabled&&titleBGM){
+        titleBGM.currentTime=0;titleBGM.volume=bgmVolume;titleBGM.play().catch(()=>{});
+    }
     gameOver=true;isFlipping=false;
     if(yuetsuUnlocked)document.getElementById('yuetsu-btn-wrap').style.display='flex';
 }
