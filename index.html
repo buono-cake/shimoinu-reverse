@@ -101,7 +101,7 @@
             .opponent-info { order: 3; }
         }
 
-        /* スマホ版専用 */
+        /* スマホ版専用（完全に独立） */
         @media (max-width: 768px) {
             #board-container { 
                 width: 86vmin !important; 
@@ -292,28 +292,12 @@
         .snowflake { position: absolute; top: 32px; left: 35px; font-size: 52px; color: #00bfff; animation: snowRotate 4s linear infinite; text-shadow: 0 0 15px #fff; z-index: 10; }
         @keyframes snowRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         #bgm-toggle-btn { position: fixed; top: 20px; right: 20px; width: 56px; height: 56px; background: #ffd700; color: #0a3d0a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.95rem; box-shadow: 0 6px 18px rgba(0,0,0,0.4); cursor: pointer; z-index: 99999; }
-
-        #loading-screen {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 61, 10, 0.92);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 999999;
-            color: #fff;
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
     </style>
 </head>
 <body>
 
 <div id="app-wrapper">
     <div class="snow-background" id="snow-bg"></div>
-
-    <!-- NOW LOADING -->
-    <div id="loading-screen">NOW LOADING…</div>
 
     <!-- タイトル画面 -->
     <div id="title-screen" class="screen">
@@ -466,6 +450,55 @@
 </div>
 
 <script>
+// ====================== 関数定義を最上部に移動（順序ミス完全修正） ======================
+function loadImages() {
+    blackPieceImgs = [];
+    for (let i = 0; i <= 6; i++) {
+        const img = new Image();
+        img.src = i === 0 ? '黒.png' : `黒${i}.png`;
+        blackPieceImgs.push(img);
+    }
+    whitePieceImgs = [];
+    for (let i = 0; i <= 7; i++) {
+        const img = new Image();
+        img.src = i === 0 ? '白.png' : `白${i}.png`;
+        whitePieceImgs.push(img);
+    }
+    whiteSpecialImg.src = '白s.png';
+    winBlackImg.src = 'win_black.png';
+    winWhiteImg.src = 'win_white.png';
+    winSpecialImg.src = 'win_s.png';
+}
+
+function initAudio() {
+    for (let i = 1; i <= 5; i++) {
+        const rp = new Audio(`reverse${i}.mp3`); rp.volume = voiceVolume; reversePlayerSounds.push(rp);
+        const rc = new Audio(`reverse${i+5}.mp3`); rc.volume = voiceVolume; reverseCpuSounds.push(rc);
+    }
+    for (let i = 1; i <= 5; i++) {
+        const wr = new Audio(`win_result${i}.mp3`); wr.volume = voiceVolume; winResultSoundsArray.push(wr);
+        const lr = new Audio(`lose_result${i}.mp3`); lr.volume = voiceVolume; loseResultSoundsArray.push(lr);
+    }
+    bgmAudio = new Audio('shower.mp3'); bgmAudio.loop = true; bgmAudio.volume = bgmVolume;
+    titleBGM = new Audio('get-ready.mp3'); titleBGM.loop = true; titleBGM.volume = bgmVolume;
+    winSeAudio = new Audio('win_se.mp3'); winSeAudio.volume = voiceVolume;
+    clapAudio = new Audio('clap.mp3'); clapAudio.volume = voiceVolume;
+    loseSeAudio = new Audio('lose_se.mp3'); loseSeAudio.volume = voiceVolume;
+    loseSakebiAudio = new Audio('lose_sakebi.mp3'); loseSakebiAudio.volume = voiceVolume;
+    drumRoalAudio = new Audio('drum_rool.mp3'); drumRoalAudio.volume = voiceVolume;
+    drawSeAudio = new Audio('draw_se.mp3'); drawSeAudio.volume = voiceVolume;
+    drawVoiceAudio = new Audio('draw_voice.mp3'); drawVoiceAudio.volume = voiceVolume;
+    drawResultAudio = new Audio('draw_result.mp3'); drawResultAudio.volume = voiceVolume;
+}
+
+function playSound(audio) {
+    if (!soundEnabled || !audio) return;
+    audio.currentTime = 0;
+    audio.volume = (audio === bgmAudio || audio === titleBGM) ? bgmVolume : voiceVolume;
+    audio.play().catch(() => {});
+}
+
+// ====================== 以降の関数はここから ======================
 const canvas = document.getElementById('board-canvas');
 const ctx = canvas.getContext('2d');
 const BOARD_SIZE = 8;
@@ -513,85 +546,6 @@ let winSpecialImg = new Image();
 
 let CELL_SIZE = 105;
 let currentDPR = 1;
-
-// ====================== loadImages（ここに先に定義） ======================
-function loadImages() {
-    blackPieceImgs = [];
-    for (let i = 0; i <= 6; i++) {
-        const img = new Image();
-        img.src = i === 0 ? '黒.png' : `黒${i}.png`;
-        blackPieceImgs.push(img);
-    }
-    whitePieceImgs = [];
-    for (let i = 0; i <= 7; i++) {
-        const img = new Image();
-        img.src = i === 0 ? '白.png' : `白${i}.png`;
-        whitePieceImgs.push(img);
-    }
-    whiteSpecialImg.src = '白s.png';
-    winBlackImg.src = 'win_black.png';
-    winWhiteImg.src = 'win_white.png';
-    winSpecialImg.src = 'win_s.png';
-}
-
-// ====================== 読み込み待機関数 ======================
-async function waitForAllAssets() {
-    document.getElementById('loading-screen').style.display = 'flex';
-    
-    loadImages(); // ここで先に画像をロード
-
-    const imagePromises = blackPieceImgs.map(img => new Promise(r => { img.onload = r; }));
-    imagePromises.push(new Promise(r => { whiteSpecialImg.onload = r; }));
-    imagePromises.push(new Promise(r => { winBlackImg.onload = r; }));
-    imagePromises.push(new Promise(r => { winWhiteImg.onload = r; }));
-    imagePromises.push(new Promise(r => { winSpecialImg.onload = r; }));
-
-    // 音声
-    const audioPromises = [];
-    for (let i = 1; i <= 10; i++) {
-        const a = new Audio(`reverse${i}.mp3`);
-        if (i <= 5) reversePlayerSounds.push(a);
-        else reverseCpuSounds.push(a);
-        audioPromises.push(new Promise(r => { a.oncanplaythrough = r; }));
-    }
-    for (let i = 1; i <= 5; i++) {
-        const wr = new Audio(`win_result${i}.mp3`); winResultSoundsArray.push(wr);
-        const lr = new Audio(`lose_result${i}.mp3`); loseResultSoundsArray.push(lr);
-        audioPromises.push(new Promise(r => { wr.oncanplaythrough = r; }));
-        audioPromises.push(new Promise(r => { lr.oncanplaythrough = r; }));
-    }
-    bgmAudio = new Audio('shower.mp3'); bgmAudio.loop = true;
-    titleBGM = new Audio('get-ready.mp3'); titleBGM.loop = true;
-    winSeAudio = new Audio('win_se.mp3');
-    clapAudio = new Audio('clap.mp3');
-    loseSeAudio = new Audio('lose_se.mp3');
-    loseSakebiAudio = new Audio('lose_sakebi.mp3');
-    drumRoalAudio = new Audio('drum_rool.mp3');
-    drawSeAudio = new Audio('draw_se.mp3');
-    drawVoiceAudio = new Audio('draw_voice.mp3');
-    drawResultAudio = new Audio('draw_result.mp3');
-    
-    audioPromises.push(new Promise(r => { bgmAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { titleBGM.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { winSeAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { clapAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { loseSeAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { loseSakebiAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { drumRoalAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { drawSeAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { drawVoiceAudio.oncanplaythrough = r; }));
-    audioPromises.push(new Promise(r => { drawResultAudio.oncanplaythrough = r; }));
-
-    await Promise.all([...imagePromises, ...audioPromises]);
-    document.getElementById('loading-screen').style.display = 'none';
-}
-
-function playSound(audio) {
-    if (!soundEnabled || !audio) return;
-    audio.currentTime = 0;
-    audio.volume = (audio === bgmAudio || audio === titleBGM) ? bgmVolume : voiceVolume;
-    audio.play().catch(() => {});
-}
 
 function getFlips(r, c, player) {
     if (board[r][c] !== 0) return [];
@@ -1062,8 +1016,6 @@ function updateBgmToggleIcon() {
 }
 
 async function startGame() {
-    await waitForAllAssets();
-    
     initBoard();
     cpuColor = 3 - playerColor;
     currentPlayer = 1;
@@ -1244,10 +1196,10 @@ async function fetchUpcomingStream() {
     }
 }
 
-async function init() {
+function init() {
     initBoard();
-    await waitForAllAssets();
     initAudio();
+    loadImages();
     createStrengthSelect();
     createColorSelect();
     setupEvents();
