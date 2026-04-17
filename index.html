@@ -159,20 +159,18 @@
 
         /* ===== モーダル：snowflakeをoverflowで隠さない ===== */
         .modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); display:none; align-items:center; justify-content:center; z-index:10000; }
-        /* overflow:hidden → overflow:visible に変更。snowflakeがはみ出して見えるように */
         .modal-content { background:linear-gradient(135deg,#e0f7ff,#b0e0ff); color:#0a3d0a; padding:48px 38px; border-radius:38px; width:92%; max-width:420px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,0.6); position:relative; overflow:visible; }
         .modal-content h2 { font-size:2.1rem; margin-bottom:28px; }
         .slider-label { display:block; margin:32px 0 12px; font-size:1.3rem; color:#0a3d0a; }
         input[type="range"] { width:100%; cursor:pointer; }
         .modal-content button { background:#ffd700; color:#0a3d0a; border:none; padding:15px 45px; font-size:1.4rem; font-weight:700; border-radius:50px; cursor:pointer; margin:14px 10px; }
         .small-btn { padding:12px 32px; font-size:1.2rem; }
-        /* snowflakeをmodal-contentより前面（z-index高）でモーダル全体の上に重ねる */
         .snowflake { 
             position:absolute; top:-26px; left:-26px;
             font-size:52px; color:#00bfff;
             animation:snowRotate 4s linear infinite;
             text-shadow:0 0 15px #fff;
-            z-index:10001; /* modalより高く */
+            z-index:10001;
             pointer-events:none;
         }
         @keyframes snowRotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
@@ -193,7 +191,6 @@
             color:#ff4500;
             text-shadow:0 0 40px #ff4500, 0 0 80px #ff0000, 0 0 120px #ff6600;
             text-align:center;
-            /* ズームアップアニメーション：小さく始まって大きくなる */
             animation:yuetsuZoomIn 1.4s cubic-bezier(0.16,1,0.3,1) both;
         }
         @keyframes yuetsuZoomIn {
@@ -201,7 +198,6 @@
             40%  { opacity:1; }
             100% { transform:scale(1); opacity:1; }
         }
-        /* フェードアウト用クラス */
         #yuetsu-overlay.fadeout { opacity:0; pointer-events:none; }
     </style>
 </head>
@@ -390,12 +386,6 @@ function initAudio(){
 }
 
 // ===== AudioContextアンロック =====
-// 【重要】play→pause によるアンロックは行わない。
-// スマホChromeは「ユーザーがページを操作した」時点で
-// そのページ内の全 audio.play() が許可される。
-// 「はい」ボタン等のユーザー操作ハンドラから呼ばれる時点で
-// AudioContext を resume するだけで十分。
-// play→pause を行うと volume=0 でも音声が流れてしまう。
 async function unlockAudioContext(){
     if(audioContextUnlocked)return;
     audioContextUnlocked=true;
@@ -404,13 +394,38 @@ async function unlockAudioContext(){
         if(AC){
             const ac=new AC();
             await ac.resume().catch(()=>{});
-            // 無音の極短パルスだけ鳴らしてコンテキストをアクティブ化
             const osc=ac.createOscillator(),g=ac.createGain();
             g.gain.value=0;osc.connect(g);g.connect(ac.destination);
             osc.start(0);osc.stop(0.001);
         }
     }catch(e){}
-    // ※ play→pause は一切行わない
+}
+
+// ===== SEアンロック（スマホChrome対策） =====
+// ユーザー操作の同期スタック内で全SEを volume=0 で play→pause する。
+// pause() はPromiseが解決した後に非同期で呼ぶが、
+// 「一度でも play() が呼ばれた」という記録がブラウザに残るため
+// 以後はどこからでも play() が成功するようになる。
+// BGM系は除外（別途 playBGM で管理）。
+function unlockSEAudios(){
+    const seAudios=[
+        ...reversePlayerSounds,...reverseCpuSounds,
+        winSeAudio,winSAudio,clapAudio,
+        loseSeAudio,loseSakebiAudio,drumRoalAudio,
+        drawSeAudio,drawVoiceAudio,drawResultAudio,
+        ...winResultSoundsArray,...loseResultSoundsArray
+    ];
+    seAudios.forEach(audio=>{
+        if(!audio)return;
+        const orig=audio.volume;
+        audio.volume=0;
+        const p=audio.play();
+        if(p&&typeof p.then==='function'){
+            p.then(()=>{audio.pause();audio.currentTime=0;audio.volume=orig;}).catch(()=>{audio.volume=orig;});
+        }else{
+            audio.pause();audio.currentTime=0;audio.volume=orig;
+        }
+    });
 }
 
 function playSound(audio){
@@ -458,9 +473,8 @@ let drawSeAudio=null,drawVoiceAudio=null,drawResultAudio=null;
 let voiceVolume=0.9,bgmVolume=0.2;
 let soundEnabled=false,seEnabled=true,bgmEnabled=true;
 let audioContextUnlocked=false,resultPhaseActive=false;
-// 愉悦：「強いに勝った」フラグ（タイトル戻り時に演出を行うため）
 let yuetsuUnlocked=false;
-let pendingYuetsuUnlock=false; // タイトルに戻る時に演出待ちフラグ
+let pendingYuetsuUnlock=false;
 let currentPlayer=1,cpuStrength='ふつう';
 let gameOver=false,isFlipping=false,modalOpenedFrom=null;
 let blackPieceImgs=[],whitePieceImgs=[];
@@ -533,8 +547,15 @@ async function placePiece(r,c,placingColor){
                 let fi=placingColor===1?blackPieceImgs[Math.floor(Math.random()*blackPieceImgs.length)]:(Math.random()<1/1017?whiteSpecialImg:whitePieceImgs[Math.floor(Math.random()*whitePieceImgs.length)]);
                 pieceVariant[fr][fc]=fi;drawBoard();
                 if(chosenRev&&soundEnabled&&seEnabled){
+                    // onendedを play() より先にセット（再生開始前に ended にならないよう）
+                    let revResolved=false;
+                    const revDone=()=>{if(!revResolved){revResolved=true;resolve();}};
+                    chosenRev.onended=revDone;
+                    chosenRev.onerror=revDone;
                     chosenRev.currentTime=0;chosenRev.volume=voiceVolume;
-                    chosenRev.play().then(()=>chosenRev.onended=()=>resolve()).catch(()=>resolve());
+                    chosenRev.play().catch(revDone);
+                    // フォールバック（音声が極端に短い・ended状態のまま等）
+                    setTimeout(revDone,3000);
                 }else resolve();
             },i*30);
         });
@@ -641,8 +662,6 @@ async function runScoreAndResultSequence(){
     });
     await drumPromise;
 
-    // 「つよい」に勝ったら pendingYuetsuUnlock フラグをセット
-    // 演出はタイトルに戻るボタンを押したタイミングで行う
     const pf=playerColor===1?finalBlackCount:finalWhiteCount;
     const cf=playerColor===1?finalWhiteCount:finalBlackCount;
     if(!yuetsuUnlocked&&cpuStrength==='つよい'&&pf>cf){
@@ -695,13 +714,11 @@ function showResultScreen(){
 
     if(pf>cf){
         titleEl.textContent='WIN';titleEl.style.color='#ffd700';
-        // 愉悦に勝った場合は確定でwin_s.png
         const winSrc=cpuStrength==='愉悦'?'win_s.png':(Math.random()<1/1017?'win_s.png':(playerColor===1?'win_black.png':'win_white.png'));
         winnerImg.innerHTML=`<img src="${winSrc}" style="width:100%;height:100%;object-fit:contain;">`;
         const crown=document.createElement('span');
         crown.className='winner-crown';crown.textContent='👑';crown.style.left='-36px';crown.style.top='4px';
         document.getElementById('player-count-area').appendChild(crown);
-        // 愉悦に勝った場合はwin_s.mp3確定、それ以外は通常
         if(soundEnabled&&seEnabled){
             if(cpuStrength==='愉悦'){
                 playSound(winSAudio);
@@ -723,7 +740,7 @@ function showResultScreen(){
     }
 }
 
-// ===== 愉悦アンロック演出（タイトルに戻るタイミングで実行） =====
+// ===== 愉悦アンロック演出 =====
 async function playYuetsuUnlockEffect(){
     yuetsuUnlocked=true;
     pendingYuetsuUnlock=false;
@@ -731,20 +748,44 @@ async function playYuetsuUnlockEffect(){
     const overlay=document.getElementById('yuetsu-overlay');
     const textEl=document.getElementById('yuetsu-overlay-text');
 
-    // BGMをフェードイン再生（yuetu.mp3）
     if(soundEnabled&&bgmEnabled&&yuetsuUnlockBGM){
         yuetsuUnlockBGM.currentTime=0;
         yuetsuUnlockBGM.volume=bgmVolume;
         yuetsuUnlockBGM.play().catch(()=>{});
     }
 
-    // メッセージリスト（各メッセージにズームインアニメーション）
+    // yuetu.png フェードイン用の img 要素を事前に追加
+    let yuetsuImg=document.getElementById('yuetsu-reveal-img');
+    if(!yuetsuImg){
+        yuetsuImg=document.createElement('img');
+        yuetsuImg.id='yuetsu-reveal-img';
+        yuetsuImg.src='yuetu.png';
+        yuetsuImg.style.cssText=[
+            'position:absolute',
+            'top:50%','left:50%',
+            'transform:translate(-50%,-50%)',
+            'max-width:100vw','max-height:100vh',
+            'width:auto','height:auto',
+            'object-fit:contain',
+            'opacity:0',
+            'transition:opacity 2.5s ease',
+            'pointer-events:none',
+            'z-index:1'
+        ].join(';');
+        overlay.appendChild(yuetsuImg);
+    }else{
+        yuetsuImg.style.opacity='0';
+        yuetsuImg.style.transition='opacity 2.5s ease';
+    }
+
     const msgs=[
-        {text:'新たな強敵に挑む気はあるか？',    dur:1800},
-        {text:'解放された…',   dur:1600},
-        {text:'新たな強敵',    dur:1800},
-        {text:'その名も…',   dur:1600},
-        {text:'† 愉悦 †',    dur:2000},
+        {text:'新たな強敵に挑む気はあるか？', dur:2200},
+        {text:'解放された…',                  dur:1800},
+        {text:'新たな強敵',                    dur:2200},
+        {text:'その名も…',                     dur:2000},
+        // 空白ウェイト（その名も…の後に間を置く）
+        {text:'',                               dur:800,  blank:true},
+        {text:'† 愉悦 †',                      dur:3500},
     ];
 
     overlay.style.opacity='1';
@@ -752,22 +793,40 @@ async function playYuetsuUnlockEffect(){
     overlay.style.display='flex';
 
     for(const msg of msgs){
-        // ズームインアニメーションをリセット→再適用
+        if(msg.blank){
+            // 空白：テキストを消して待機するだけ
+            textEl.style.animation='none';
+            textEl.textContent='';
+            await new Promise(r=>setTimeout(r,msg.dur));
+            continue;
+        }
         textEl.style.animation='none';
         textEl.textContent=msg.text;
-        // reflow trigger
         void textEl.offsetWidth;
-        textEl.style.animation=`yuetsuZoomIn ${Math.min(msg.dur*0.6,1200)}ms cubic-bezier(0.16,1,0.3,1) both`;
-        await new Promise(r=>setTimeout(r,msg.dur));
+        // †愉悦†はゆっくりズームイン（2000ms）
+        const zoomDur=msg.text==='† 愉悦 †'?2000:Math.min(msg.dur*0.55,1100);
+        textEl.style.animation=`yuetsuZoomIn ${zoomDur}ms cubic-bezier(0.16,1,0.3,1) both`;
+
+        // †愉悦†表示中の後半（1500ms後）にyuetu.pngをフェードイン開始
+        if(msg.text==='† 愉悦 †'){
+            const halfWait=msg.dur-2000;
+            await new Promise(r=>setTimeout(r,Math.max(halfWait,500)));
+            // yuetu.png フェードイン（透明度0.5まで）
+            requestAnimationFrame(()=>{
+                yuetsuImg.style.opacity='0.5';
+            });
+            await new Promise(r=>setTimeout(r,2000));
+        }else{
+            await new Promise(r=>setTimeout(r,msg.dur));
+        }
     }
 
-    // フェードアウト（1.2s）してからBGM停止・タイトル表示
+    // フェードアウト（1.5s）
     overlay.classList.add('fadeout');
-    // BGMフェードアウト
     if(yuetsuUnlockBGM&&!yuetsuUnlockBGM.paused){
         const fadeSteps=24;
         const origVol=yuetsuUnlockBGM.volume;
-        const stepTime=1200/fadeSteps;
+        const stepTime=1500/fadeSteps;
         for(let i=fadeSteps-1;i>=0;i--){
             await new Promise(r=>setTimeout(r,stepTime));
             yuetsuUnlockBGM.volume=origVol*(i/fadeSteps);
@@ -776,12 +835,14 @@ async function playYuetsuUnlockEffect(){
         yuetsuUnlockBGM.currentTime=0;
         yuetsuUnlockBGM.volume=bgmVolume;
     }else{
-        await new Promise(r=>setTimeout(r,1200));
+        await new Promise(r=>setTimeout(r,1500));
     }
     overlay.style.display='none';
     overlay.classList.remove('fadeout');
+    // img をリセット
+    yuetsuImg.style.opacity='0';
+    yuetsuImg.style.transition='none';
 
-    // 愉悦ボタンを表示
     const wrap=document.getElementById('yuetsu-btn-wrap');
     wrap.style.display='flex';
     wrap.style.opacity='0';
@@ -899,7 +960,6 @@ function setupEvents(){
     document.getElementById('bgm-toggle-option-btn').addEventListener('click',()=>{
         bgmEnabled=!bgmEnabled;
         if(bgmEnabled&&soundEnabled){
-            // ★同期スタック内で直接 play()
             if(titleBGM&&document.getElementById('title-screen').style.display!=='none'){
                 titleBGM.currentTime=0;titleBGM.volume=bgmVolume;titleBGM.play().catch(()=>{});
             }else if(document.getElementById('game-screen').style.display!=='none'&&!gameOver){
@@ -925,7 +985,6 @@ function setupEvents(){
         modalOpenedFrom=null;
     });
 
-    // タイトルに戻るボタン：愉悦アンロック pending 時は演出→タイトル
     document.getElementById('result-title-btn').addEventListener('click',async()=>{
         if(pendingYuetsuUnlock){
             document.getElementById('result-screen').style.display='none';
@@ -944,14 +1003,13 @@ function setupEvents(){
         soundEnabled=true;
         document.getElementById('bgm-confirm-modal').style.display='none';
         updateBgmToggleIcon();
-        // ★スマホChrome対策：クリックハンドラの同期スタック内で直接 play() を呼ぶ
-        // await/setTimeoutを挟むと「ユーザー操作の直接の結果」と見なされなくなる
         if(soundEnabled&&bgmEnabled&&titleBGM){
             titleBGM.currentTime=0;
             titleBGM.volume=bgmVolume;
             titleBGM.play().catch(()=>{});
         }
-        // AudioContextのresumeは非同期でOK（BGM再生許可はplay()で得られる）
+        // BGMはplay()で許可済み。SEも同タイミングでアンロック
+        unlockSEAudios();
         unlockAudioContext().catch(()=>{});
     });
     document.getElementById('bgm-no-btn').addEventListener('click',()=>{
@@ -963,7 +1021,6 @@ function setupEvents(){
         soundEnabled=!soundEnabled;
         if(soundEnabled){
             if(resultPhaseActive){updateBgmToggleIcon();return;}
-            // ★同期スタック内で直接 play()
             if(!bgmEnabled){updateBgmToggleIcon();return;}
             const onTitle=titleBGM&&document.getElementById('title-screen').style.display!=='none';
             const onGame=document.getElementById('game-screen').style.display!=='none'&&!gameOver;
@@ -984,11 +1041,11 @@ function startGame(){
     initBoard();
     cpuColor=3-playerColor;currentPlayer=1;gameOver=false;isFlipping=false;resultPhaseActive=false;
     stopAllBGM();
-    // ★同期スタック内で直接 play()（スタートボタンのクリックハンドラから呼ばれるため許可される）
     if(soundEnabled&&bgmEnabled){
         const bgm=cpuStrength==='愉悦'?yuetsuBGM:bgmAudio;
         if(bgm){bgm.currentTime=0;bgm.volume=bgmVolume;bgm.play().catch(()=>{});}
     }
+    unlockSEAudios();  // ★BGMなし選択者向けSEアンロック
     unlockAudioContext().catch(()=>{});
     document.getElementById('title-screen').style.display='none';
     document.getElementById('game-screen').style.display='flex';
@@ -1019,7 +1076,6 @@ function goToTitle(){
     document.getElementById('title-screen').style.display='flex';
     stopAllBGM();
     resultPhaseActive=false;
-    // タイトルBGM再生（goToTitleはボタン操作から呼ばれるので直接play可）
     if(soundEnabled&&bgmEnabled&&titleBGM){
         titleBGM.currentTime=0;titleBGM.volume=bgmVolume;titleBGM.play().catch(()=>{});
     }
