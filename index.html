@@ -529,11 +529,11 @@ function initAudio() {
         const wr = new Audio(`win_result${i}.mp3`); wr.volume = voiceVolume; winResultSoundsArray.push(wr);
         const lr = new Audio(`lose_result${i}.mp3`); lr.volume = voiceVolume; loseResultSoundsArray.push(lr);
     }
-    bgmAudio = new Audio('shower.wav'); bgmAudio.loop = true; bgmAudio.volume = bgmVolume;
+    bgmAudio = new Audio('shower.mp3'); bgmAudio.loop = true; bgmAudio.volume = bgmVolume;
     titleBGM = new Audio('get-ready.mp3'); titleBGM.loop = true; titleBGM.volume = bgmVolume;
     winSeAudio = new Audio('win_se.mp3'); winSeAudio.volume = voiceVolume;
     clapAudio = new Audio('clap.mp3'); clapAudio.volume = voiceVolume;
-    loseSeAudio = new Audio('lose_se.wav'); loseSeAudio.volume = voiceVolume;
+    loseSeAudio = new Audio('lose_se.mp3'); loseSeAudio.volume = voiceVolume;
     loseSakebiAudio = new Audio('lose_sakebi.mp3'); loseSakebiAudio.volume = voiceVolume;
     drumRoalAudio = new Audio('drum_rool.mp3'); drumRoalAudio.volume = voiceVolume;
     drawSeAudio = new Audio('draw_se.mp3'); drawSeAudio.volume = voiceVolume;
