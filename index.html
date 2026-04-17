@@ -71,7 +71,6 @@
         }
 
         /* ===================== PC版 ゲーム画面 ===================== */
-        /* board-container: PC版はそのまま */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -90,25 +89,29 @@
         }
 
         @media (min-width: 769px) {
-            /* PC版ゲーム画面：横並び */
+            /* PC版ゲーム画面：横並び。盤とアイコンをspace-betweenで配置 */
             .game-content {
                 flex-direction: row !important;
-                padding: 0 20px;
-                gap: 20px;
-                justify-content: center;
+                padding: 0 0;
+                gap: 0;
+                justify-content: space-between;
                 align-items: center;
             }
-            .player-info { order: 1; }
-            #board-container { order: 2; }
-            .opponent-info { order: 3; }
+            .player-info  { order: 1; flex: 1; display: flex; justify-content: center; align-items: center; }
+            #board-container { order: 2; flex: 0 0 auto; }
+            .opponent-info { order: 3; flex: 1; display: flex; justify-content: center; align-items: center; }
 
-            /* PC版 FHD対応：char-imgをvminベースで小さめに抑える */
+            /* PC版アイコン：盤と画面端の中間を中心に、できるだけ大きく
+               盤幅 = min(72vmin,1100px)+border*2+padding*2 ≈ 72vmin+72px
+               残り幅 = (100vw - boardWidth) / 2 をアイコン最大サイズの目安に
+               vminベースで調整（盤にぶつからず、画面外に出ない） */
             .char-img {
-                width: min(22vmin, 280px) !important;
-                height: min(22vmin, 280px) !important;
+                width: min(28vmin, 360px) !important;
+                height: min(28vmin, 360px) !important;
+                aspect-ratio: 1 / 1 !important;
             }
 
-            /* PC版タイトル：1画面に収まるようコンパクト化 */
+            /* PC版タイトル */
             #title-screen {
                 justify-content: flex-start !important;
                 overflow-y: auto !important;
@@ -125,107 +128,114 @@
                 width: clamp(70px, 10vw, 110px) !important;
                 height: clamp(70px, 10vw, 110px) !important;
             }
-            .start-btn {
-                margin: 8px 0 18px !important;
-            }
-            .strength-select {
-                margin: 10px 0 10px !important;
+            .start-btn { margin: 8px 0 18px !important; }
+            .strength-select { margin: 10px 0 10px !important; }
+
+            /* PC版リザルト：アイコン大きめ */
+            #winner-char-img {
+                width: min(45vmin, 500px) !important;
+                height: min(45vmin, 500px) !important;
+                aspect-ratio: 1 / 1 !important;
+                border-radius: 50% !important;
             }
         }
 
-        /* ===================== スマホ版専用（完全に独立・PC版に干渉しない） ===================== */
+        /* ===================== スマホ版専用（完全独立） ===================== */
         @media (max-width: 768px) {
 
             /* ===== タイトル画面 ===== */
-            /*
-             * 上部固定ゾーン（オプション〜スタートボタン＋SNSリンク）と
-             * 下部スクロールゾーン（YouTube・クレジット）に分離する。
-             * #title-screen 自体は overflow:hidden のまま維持し、
-             * 内部の #title-scroll-area だけスクロール可能にする。
-             */
+            /* 全体をスクロール可能にする（fixed-areaは固定なし） */
             #title-screen {
                 justify-content: flex-start !important;
                 align-items: stretch !important;
-                overflow: hidden !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
                 padding: 0 !important;
             }
-
-            /* 上部固定エリア：スクロールしない */
+            /* title-fixed-area は通常フロー（スクロールで流れる） */
             #title-fixed-area {
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 width: 100% !important;
-                padding: 50px 12px 10px !important; /* 上にオプション/BGMボタン分のスペース */
+                padding: 52px 12px 8px !important;
                 flex-shrink: 0 !important;
-                z-index: 5 !important;
             }
-
-            /* 下部スクロールエリア */
+            /* title-scroll-area も通常フロー */
             #title-scroll-area {
-                flex: 1 1 auto !important;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch !important;
                 width: 100% !important;
-                padding: 8px 12px 20px !important;
+                padding: 4px 12px 24px !important;
+                flex-shrink: 0 !important;
             }
 
-            /* タイトル文字をスマホ用に小さく */
+            /* タイトル文字 */
             .main-title {
                 font-size: clamp(2.2rem, 9vw, 3.5rem) !important;
                 letter-spacing: 4px !important;
             }
             .subtitle {
                 font-size: clamp(0.85rem, 3.2vw, 1.1rem) !important;
+                /* 通常は非表示、長押しで表示するため color:transparent のまま */
+                /* JS側で制御 */
             }
 
-            /* 強さ・色選択ボタンをコンパクトに */
+            /* 中央揃えラベル */
+            .title-label {
+                text-align: center !important;
+                width: 100% !important;
+            }
+
+            /* 強さ・色選択ボタン：少し大きく、テキスト収まるよう調整 */
             .strength-select {
                 gap: 10px !important;
-                margin: 8px 0 6px !important;
+                margin: 6px 0 6px !important;
             }
             .strength-btn {
-                width: clamp(80px, 27vw, 110px) !important;
-                height: clamp(80px, 27vw, 110px) !important;
+                width: clamp(88px, 28vw, 115px) !important;
+                height: clamp(88px, 28vw, 115px) !important;
                 border-width: 4px !important;
-                font-size: 0.85rem !important;
+                font-size: 0.78rem !important;
                 border-radius: 16px !important;
+                padding: 4px !important;
+                /* テキストがボタン内に収まるよう */
+                overflow: hidden !important;
+                word-break: keep-all !important;
             }
             .strength-btn img {
-                width: clamp(55px, 18vw, 75px) !important;
-                height: clamp(55px, 18vw, 75px) !important;
-                margin-bottom: 4px !important;
+                width: clamp(52px, 17vw, 72px) !important;
+                height: clamp(52px, 17vw, 72px) !important;
+                margin-bottom: 3px !important;
+                flex-shrink: 0 !important;
             }
 
             /* スタートボタン */
             .start-btn {
                 font-size: clamp(1.2rem, 4.5vw, 1.6rem) !important;
                 padding: 12px 40px !important;
-                margin: 10px 0 8px !important;
+                margin: 8px 0 8px !important;
             }
 
             /* SNSリンク */
-            .link-area {
-                gap: 10px !important;
-                margin-bottom: 8px !important;
-            }
-            .link-area a {
-                padding: 8px 18px !important;
-                font-size: 0.85rem !important;
-            }
+            .link-area { gap: 10px !important; margin-bottom: 8px !important; }
+            .link-area a { padding: 8px 18px !important; font-size: 0.85rem !important; }
 
-            /* YouTube埋め込みをスマホ縦向きに縦並び */
+            /* YouTube縦並び */
             .youtube-container {
                 flex-direction: column !important;
                 gap: 14px !important;
                 width: 100% !important;
             }
-            .youtube-column {
-                min-width: unset !important;
-                width: 100% !important;
-            }
-            .youtube-embed iframe {
-                height: clamp(140px, 52vw, 200px) !important;
+            .youtube-column { min-width: unset !important; width: 100% !important; }
+            .youtube-embed iframe { height: clamp(140px, 52vw, 200px) !important; }
+
+            /* BGM ON/OFFボタンをタイトル文字と被らないよう小さく */
+            #bgm-toggle-btn {
+                width: 44px !important;
+                height: 44px !important;
+                font-size: 1.4rem !important;
+                top: 16px !important;
+                right: 14px !important;
             }
 
             /* ===== ゲーム画面 ===== */
@@ -235,7 +245,6 @@
                 align-items: center !important;
                 overflow: hidden !important;
             }
-
             .game-content {
                 flex-direction: column !important;
                 padding: 0 !important;
@@ -246,18 +255,8 @@
                 justify-content: flex-start !important;
                 position: relative !important;
             }
+            #player-info-pc, #opponent-info-pc { display: none !important; }
 
-            /* PC版サイドパネルは非表示 */
-            #player-info-pc,
-            #opponent-info-pc {
-                display: none !important;
-            }
-
-            /*
-             * スマホ用上部バー
-             * オプションボタン(left:16, top:16, 68px) / BGMボタン(right:20, top:20, 56px)
-             * を左右に避けて中央に2アイコンを配置
-             */
             .smartphone-top-bar {
                 position: absolute !important;
                 top: 10px !important;
@@ -270,7 +269,6 @@
                 z-index: 30 !important;
                 pointer-events: none !important;
             }
-
             .smartphone-top-bar .side-info {
                 text-align: center !important;
                 display: flex !important;
@@ -278,8 +276,6 @@
                 align-items: center !important;
                 pointer-events: auto !important;
             }
-
-            /* アイコン 80px */
             .smartphone-top-bar .char-img {
                 width: 80px !important;
                 height: 80px !important;
@@ -295,13 +291,9 @@
                 align-items: center !important;
                 justify-content: center !important;
             }
-
             .smartphone-top-bar .char-img img {
-                width: 100% !important;
-                height: 100% !important;
-                object-fit: contain !important;
+                width: 100% !important; height: 100% !important; object-fit: contain !important;
             }
-
             .smartphone-top-bar .side-label {
                 font-size: 0.72rem !important;
                 font-weight: 700 !important;
@@ -309,8 +301,6 @@
                 text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important;
                 white-space: nowrap !important;
             }
-
-            /* 盤面：上部バー(10+80+4+~16+6=116px) + 余裕で 130px */
             #board-container {
                 width: 82vmin !important;
                 height: 82vmin !important;
@@ -320,13 +310,9 @@
                 flex-shrink: 0 !important;
                 box-sizing: content-box !important;
             }
-
-            /* ステータスバー */
             .status-bar {
                 position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
+                bottom: 0 !important; left: 0 !important; right: 0 !important;
                 font-size: clamp(1.0rem, 3.2vw, 1.3rem) !important;
                 padding: 10px !important;
                 z-index: 20 !important;
@@ -339,16 +325,14 @@
                 padding: 12px 16px !important;
                 overflow: hidden !important;
             }
-
             .result-title {
                 font-size: clamp(3rem, 14vw, 5rem) !important;
-                margin-bottom: 10px !important;
+                margin-bottom: 8px !important;
             }
-
-            /* リザルト画像：正方形を強制して楕円にならないよう */
+            /* リザルト画像：大きめの正円 */
             #winner-char-img {
-                width: min(42vmin, 200px) !important;
-                height: min(42vmin, 200px) !important;
+                width: min(54vmin, 260px) !important;
+                height: min(54vmin, 260px) !important;
                 min-width: unset !important;
                 min-height: unset !important;
                 aspect-ratio: 1 / 1 !important;
@@ -356,15 +340,11 @@
                 margin: 8px auto !important;
                 flex-shrink: 0 !important;
             }
-
-            /* スコア行 */
-            #result-screen > div[style*="font-size:1.65rem"] {
+            #result-score-area {
                 font-size: 1.3rem !important;
                 margin: 8px 0 !important;
                 gap: 30px !important;
             }
-
-            /* ボタン */
             #result-title-btn, #result-end-btn {
                 padding: 14px 36px !important;
                 font-size: clamp(1.1rem, 4vw, 1.4rem) !important;
@@ -375,97 +355,81 @@
                 top: -18px !important;
                 left: -16px !important;
             }
+
+            /* ===== end-modal（終了確認）の雪の結晶位置修正 ===== */
+            /* 左上角を中心に配置（top:-半分, left:-半分） */
+            #end-modal .snowflake {
+                top: -26px !important;
+                left: -26px !important;
+                font-size: 52px !important;
+            }
+
+            /* ===== オプションモーダル：SE/BGM ON/OFFボタン ===== */
+            .toggle-sound-btn {
+                background: #4caf50;
+                color: #fff;
+                border: none;
+                padding: 10px 28px;
+                font-size: 1.1rem;
+                font-weight: 700;
+                border-radius: 50px;
+                cursor: pointer;
+                margin: 6px 6px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                transition: background 0.2s;
+            }
+            .toggle-sound-btn.off {
+                background: #aaa;
+            }
         }
 
-        /* ===================== 共通スタイル（変更なし） ===================== */
+        /* ===================== 共通スタイル ===================== */
         canvas { 
-            display: block; 
-            background: #0f4a0f; 
-            width: 100%; 
-            height: 100%; 
+            display: block; background: #0f4a0f; width: 100%; height: 100%;
             image-rendering: crisp-edges;
         }
-
         .game-header { 
-            width: 100%; 
-            padding: 18px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: transparent; 
-            position: relative; 
-            z-index: 10; 
+            width: 100%; padding: 18px; display: flex; justify-content: space-between; align-items: center; 
+            background: transparent; position: relative; z-index: 10; 
         }
         .option-btn { 
-            width: 68px; 
-            height: 68px; 
-            background: #ffd700; 
-            color: #0a3d0a; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 2.2rem; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
-            cursor: pointer; 
+            width: 68px; height: 68px; background: #ffd700; color: #0a3d0a; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; font-size: 2.2rem; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); cursor: pointer; 
         }
-
         .status-bar { 
-            width: 100%; 
-            text-align: center; 
-            padding: 18px; 
-            font-size: clamp(1.25rem, 3.2vw, 1.65rem); 
-            background: rgba(0,0,0,0.55); 
-            font-weight: 700; 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
+            width: 100%; text-align: center; padding: 18px; font-size: clamp(1.25rem, 3.2vw, 1.65rem); 
+            background: rgba(0,0,0,0.55); font-weight: 700; position: absolute; bottom: 0; left: 0; 
         }
-
         .game-content {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 40px;
-            position: relative;
+            display: flex; width: 100%; height: 100%; justify-content: space-between;
+            align-items: center; padding: 0 40px; position: relative;
         }
-
         .side-info { 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: clamp(1.25rem, 2.8vw, 1.6rem); 
-            font-weight: 700; 
-            z-index: 20;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; font-size: clamp(1.25rem, 2.8vw, 1.6rem); font-weight: 700; z-index: 20;
         }
-
         .char-img { 
-            width: min(38vmin, 580px); 
-            height: min(38vmin, 580px); 
-            border-radius: 50%; 
-            background: #fff; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-bottom: 14px; 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.5); 
-            overflow: hidden; 
+            width: min(38vmin, 580px); height: min(38vmin, 580px); border-radius: 50%; 
+            background: #fff; display: flex; align-items: center; justify-content: center; 
+            margin-bottom: 14px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); overflow: hidden; 
         }
         .char-img img { width: 100%; height: 100%; object-fit: contain; }
-
         .main-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: clamp(3.8rem, 7vw, 7.8rem);
-            font-weight: 900;
-            letter-spacing: 10px;
+            font-family: 'Fredoka One', cursive; font-size: clamp(3.8rem, 7vw, 7.8rem);
+            font-weight: 900; letter-spacing: 10px;
         }
         .main-title span.symbol { color: #ff69b4; }
         .main-title span.text { color: #00ffff; }
-        .subtitle { font-size: clamp(1.5rem, 3.5vw, 2.3rem); font-weight: 700; color: transparent; }
+        /* サブタイトル：通常は非表示、.visible クラスで表示 */
+        .subtitle { 
+            font-size: clamp(1.5rem, 3.5vw, 2.3rem); font-weight: 700; 
+            color: transparent; 
+            user-select: none;
+            -webkit-user-select: none;
+            transition: color 0.3s;
+        }
+        .subtitle.visible { color: #fff; }
 
         .strength-select { display: flex; gap: clamp(18px, 4vw, 30px); margin: 20px 0 18px; flex-wrap: wrap; justify-content: center; }
         .strength-btn { 
@@ -476,42 +440,36 @@
         }
         .strength-btn.selected { background: #00bfff; color: #fff; transform: scale(1.1); }
         .strength-btn img { width: clamp(95px, 16vw, 125px); height: clamp(95px, 16vw, 125px); margin-bottom: 8px; }
-
         .start-btn { 
             background: #00bfff; color: #fff; font-size: clamp(1.8rem, 5vw, 2.4rem); font-weight: 700; 
             padding: clamp(16px, 4vw, 20px) clamp(55px, 10vw, 75px); border-radius: 50px; border: none; 
             box-shadow: 0 12px 35px rgba(0,191,255,0.5); cursor: pointer; margin: 15px 0 30px; 
         }
-
         #title-screen { background: transparent; overflow: hidden; }
-
         .link-area { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; margin-bottom:18px; }
         .link-area a { text-decoration:none; padding:11px 32px; border-radius:50px; font-size:clamp(0.98rem, 2.4vw, 1.15rem); font-weight:700; box-shadow:0 6px 14px rgba(0,0,0,0.3); }
-
         .youtube-container { display: flex; gap: 28px; justify-content: center; width: 94%; max-width: 1080px; }
         .youtube-column { flex: 1; min-width: 270px; }
         .youtube-title { font-size: clamp(1.1rem, 2.5vw, 1.35rem); font-weight: 700; margin-bottom: 8px; text-align: center; color: #0a3d0a; }
         .youtube-embed iframe { width: 100%; height: clamp(170px, 32vw, 210px); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-
         .credit { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; font-size: clamp(0.85rem, 2vw, 0.95rem); color: #0a3d0a; opacity: 0.85; margin-top: 15px; }
 
         #result-screen { background: linear-gradient(135deg, #e0f7ff, #b0e0ff); color: #0a3d0a; }
         .result-title { font-size: clamp(4.2rem, 11vw, 7.5rem); margin-bottom: 35px; text-shadow: 0 0 45px #00bfff; }
 
+        /* リザルトスコアエリア（IDで管理してスマホ上書きできるように） */
+        #result-score-area {
+            font-size: 1.65rem; margin: 25px 0;
+            display: flex; justify-content: center; gap: 45px;
+            width: 100%; max-width: 420px;
+        }
+
         #win-lose-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.3);
-            z-index: 99999;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.3); z-index: 99999;
         }
-        #win-lose-overlay img {
-            max-width: 92%;
-            max-height: 92%;
-            object-fit: contain;
-        }
+        #win-lose-overlay img { max-width: 92%; max-height: 92%; object-fit: contain; }
 
         #result-title-btn, #result-end-btn { 
             padding: 24px 65px; font-size: clamp(1.65rem, 4.8vw, 2.0rem); border-radius: 50px; margin: 20px 12px; 
@@ -519,6 +477,20 @@
         }
         #result-title-btn { background: #00bfff; color: #fff; }
         #result-end-btn { background: #fff; color: #0a3d0a; }
+
+        /* 勝者横の王冠アイコン */
+        .winner-crown {
+            position: absolute;
+            font-size: 36px;
+            animation: crownFloat 1.5s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes crownFloat {
+            from { transform: translateY(0); }
+            to   { transform: translateY(-6px); }
+        }
+
+        /* result-title-btn の ❄️ → 削除、代わりに CSS で管理 */
         #result-snow { position: absolute; top: -26px; left: -26px; font-size: 58px; color: #00bfff; animation: snowRotate 3s linear infinite; }
 
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 10000; }
@@ -528,9 +500,31 @@
         input[type="range"] { width: 100%; cursor: pointer; }
         .modal-content button { background: #ffd700; color: #0a3d0a; border: none; padding: 15px 45px; font-size: 1.4rem; font-weight: 700; border-radius: 50px; cursor: pointer; margin: 14px 10px; }
         .small-btn { padding: 12px 32px; font-size: 1.2rem; }
-        .snowflake { position: absolute; top: 32px; left: 35px; font-size: 52px; color: #00bfff; animation: snowRotate 4s linear infinite; text-shadow: 0 0 15px #fff; z-index: 10; }
+        /* snowflake：通常位置（モーダル左上角を中心） */
+        .snowflake { 
+            position: absolute; 
+            top: -26px; left: -26px;
+            font-size: 52px; color: #00bfff; 
+            animation: snowRotate 4s linear infinite; 
+            text-shadow: 0 0 15px #fff; z-index: 10; 
+        }
         @keyframes snowRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         #bgm-toggle-btn { position: fixed; top: 20px; right: 20px; width: 56px; height: 56px; background: #ffd700; color: #0a3d0a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.95rem; box-shadow: 0 6px 18px rgba(0,0,0,0.4); cursor: pointer; z-index: 99999; }
+
+        /* SE/BGM個別トグルボタン（オプション内） */
+        .toggle-sound-btn {
+            background: #4caf50; color: #fff; border: none;
+            padding: 10px 28px; font-size: 1.1rem; font-weight: 700;
+            border-radius: 50px; cursor: pointer; margin: 6px 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: background 0.2s;
+        }
+        .toggle-sound-btn.off { background: #aaa; }
+
+        /* タイトルラベルの中央揃え（共通） */
+        .title-label {
+            text-align: center;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -540,24 +534,23 @@
 
     <!-- タイトル画面 -->
     <div id="title-screen" class="screen">
-        <!-- オプションボタン（全画面共通で固定） -->
         <div class="game-header" style="position:absolute;top:0;width:100%;padding:12px;z-index:10;">
             <div class="option-btn" id="title-option-btn">⚙️</div>
         </div>
 
-        <!-- スマホ：上部固定エリア（スクロールしない） / PC：通常フロー -->
         <div id="title-fixed-area">
             <div class="title" style="text-align:center;margin-bottom:4px;">
                 <span class="main-title"><span class="symbol">†</span><span class="text">REVERSE</span><span class="symbol">†</span></span><br>
-                <span class="subtitle">【表裏】～生と死は等価値～【一体】</span>
+                <!-- 長押しで表示されるサブタイトル -->
+                <span class="subtitle" id="subtitle-text">【表裏】～生と死は等価値～【一体】</span>
             </div>
 
-            <p style="font-size:1.1rem;margin:4px 0 8px;">CPU対戦</p>
+            <p class="title-label" style="font-size:1.1rem;margin:4px 0 8px;">CPU対戦</p>
 
-            <div style="margin:4px 0 4px;font-size:1.1rem;font-weight:700;">CPUの強さを選んでね！</div>
+            <div class="title-label" style="margin:4px 0 4px;font-size:1.1rem;font-weight:700;">CPUの強さを選んでね！</div>
             <div class="strength-select" id="strength-select"></div>
 
-            <div style="margin:4px 0 4px;font-size:1.1rem;font-weight:700;">あなたの色を選んでね！</div>
+            <div class="title-label" style="margin:4px 0 4px;font-size:1.1rem;font-weight:700;">あなたの色を選んでね！</div>
             <div class="strength-select" id="color-select"></div>
 
             <button id="start-btn" class="start-btn">対戦 スタート！</button>
@@ -568,7 +561,6 @@
             </div>
         </div>
 
-        <!-- スマホ：スクロールエリア（YouTube・クレジット） / PC：通常フロー -->
         <div id="title-scroll-area">
             <div class="youtube-container">
                 <div class="youtube-column">
@@ -582,7 +574,6 @@
                     <p id="no-stream-message" style="display:none;text-align:center;color:#d32f2f;font-size:0.95rem;">取得失敗</p>
                 </div>
             </div>
-
             <div class="credit">
                 <div>音楽：魔王魂様、DOVA-SYNDROME様、Kyatto様</div>
             </div>
@@ -594,24 +585,18 @@
         <div class="game-header">
             <div class="option-btn" id="option-btn" style="position:absolute;top:16px;left:16px;">⚙️</div>
         </div>
-        
         <div class="game-content">
-            <!-- PC版（変更なし） -->
             <div class="side-info player-info" id="player-info-pc">
                 <div class="char-img" id="player-char-img-pc"></div>
                 <div class="side-label" id="player-label-pc">YOU</div>
             </div>
-            
             <div id="board-container">
                 <canvas id="board-canvas"></canvas>
             </div>
-            
             <div class="side-info opponent-info" id="opponent-info-pc">
                 <div class="char-img" id="opponent-char-img-pc"></div>
                 <div class="side-label" id="opponent-label-pc">ENEMY</div>
             </div>
-            
-            <!-- スマホ版専用上部バー -->
             <div class="smartphone-top-bar" id="smartphone-top-bar" style="display:none;">
                 <div class="side-info" id="player-info-mobile">
                     <div class="char-img" id="player-char-img-mobile"></div>
@@ -623,7 +608,6 @@
                 </div>
             </div>
         </div>
-        
         <div class="status-bar" id="status-bar">あなたの番です（白）</div>
     </div>
 
@@ -631,7 +615,8 @@
     <div id="result-screen" class="screen" style="display:none;">
         <div id="result-title" class="result-title">WIN</div>
         <div class="char-img" id="winner-char-img" style="width:420px;height:420px;margin:30px auto;"></div>
-        <div style="font-size:1.65rem;margin:25px 0; display:flex; justify-content:center; gap:45px; width:100%; max-width:420px;">
+        <!-- スコアエリアをIDで管理 -->
+        <div id="result-score-area">
             <div id="player-count-area" style="text-align:center; position:relative;">
                 <div style="font-size:1.15rem;margin-bottom:6px;">YOU</div>
                 <span id="final-player-count" style="color:#ffd700;">32</span>
@@ -662,7 +647,12 @@
             <input type="range" id="voice-volume-slider" min="0" max="1" step="0.1" value="0.9">
             <div class="slider-label">BGM音量</div>
             <input type="range" id="bgm-volume-slider" min="0" max="1" step="0.1" value="0.2">
-            <button id="btn-title-back" style="margin-top:38px;">タイトルに戻る</button>
+            <!-- SE/BGM個別ON/OFF（スマホ向けに追加、PCでも使える） -->
+            <div style="margin-top:22px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+                <button class="toggle-sound-btn" id="se-toggle-btn">SE：ON</button>
+                <button class="toggle-sound-btn" id="bgm-toggle-option-btn">BGM：ON</button>
+            </div>
+            <button id="btn-title-back" style="margin-top:30px;">タイトルに戻る</button>
             <button id="btn-close-option" class="small-btn">閉じる</button>
         </div>
     </div>
@@ -684,7 +674,7 @@
     <div class="modal" id="end-modal" style="z-index:2000;">
         <div class="modal-content">
             <div class="snowflake">❄️</div>
-            <p style="font-size:1.5rem;line-height:1.5;margin-bottom:38px;">
+            <p style="font-size:1.5rem;line-height:1.5;margin:38px 0 38px;">
                 ブラウザゲームだから<br>×ボタンでやめてね！
             </p>
             <button id="close-end-modal" class="small-btn">OK</button>
@@ -695,27 +685,6 @@
 </div>
 
 <script>
-// =============================================================================
-// 音声系修正方針：
-//
-// ■ BGMポップアップ後にPC版で流れない / スマホで全音が一気に出る
-//   unlockAudioContext() が全音声を volume=0 で play→pause するが、
-//   .play() は非同期(Promise)なので pause() が追いつかず音が鳴る。
-//   また pause()した後すぐ playSound(titleBGM) を呼ぶと
-//   「まだ unlock のplay中」と競合してキャンセルされる。
-//
-//   解決策：unlock は AudioContext の resume() だけにとどめる。
-//   個々の Audio オブジェクトを play→pause するのをやめる。
-//   代わりに「最初の実際の再生」を setTimeout(0) で1フレーム遅らせることで
-//   ブラウザのUnlockが確定してから再生する。
-//
-// ■ スライダー音量がスマホで反映されない
-//   モーダル内のスライダーで touchmove 中に getBoundingClientRect() の
-//   位置計算がずれる問題がある。
-//   解決策：PointerEvents API を使う（スマホChromeで確実に動作）。
-//   pointermove + setPointerCapture で値を正確に取得する。
-// =============================================================================
-
 // ====================== 画像ロード ======================
 function loadImages() {
     blackPieceImgs = [];
@@ -759,8 +728,6 @@ function initAudio() {
 }
 
 // ====================== AudioContext アンロック ======================
-// play→pause は使わず AudioContext.resume() だけ行う。
-// これにより「音が一気に流れる」「BGMがキャンセルされる」問題を解消。
 function unlockAudioContext() {
     if (audioContextUnlocked) return;
     audioContextUnlocked = true;
@@ -769,10 +736,9 @@ function unlockAudioContext() {
         if (AC) {
             const ac = new AC();
             ac.resume().catch(() => {});
-            // ダミー音源を一瞬鳴らしてコンテキストをアクティブ化
             const osc = ac.createOscillator();
             const gainNode = ac.createGain();
-            gainNode.gain.value = 0; // 無音
+            gainNode.gain.value = 0;
             osc.connect(gainNode);
             gainNode.connect(ac.destination);
             osc.start(0);
@@ -781,7 +747,7 @@ function unlockAudioContext() {
     } catch(e) {}
 }
 
-// soundEnabled=true の場合のみ再生（通常再生）
+// SE有効時のみ再生
 function playSound(audio) {
     if (!soundEnabled || !audio) return;
     audio.currentTime = 0;
@@ -789,18 +755,22 @@ function playSound(audio) {
     audio.play().catch(() => {});
 }
 
-// 演出SEをPromiseで待機（maxWaitMs でタイムアウト保証）
+// BGM専用再生（bgmEnabled チェック）
+function playBGM(audio) {
+    if (!bgmEnabled || !audio) return;
+    audio.currentTime = 0;
+    audio.volume = bgmVolume;
+    audio.play().catch(() => {});
+}
+
+// 演出SEをPromiseで待機
 function playSoundAndWait(audio, maxWaitMs) {
     return new Promise(resolve => {
         if (!audio) { resolve(); return; }
         audio.currentTime = 0;
         audio.volume = voiceVolume;
         let resolved = false;
-        const done = () => {
-            if (resolved) return;
-            resolved = true;
-            resolve();
-        };
+        const done = () => { if (resolved) return; resolved = true; resolve(); };
         const timeout = setTimeout(done, maxWaitMs);
         audio.onended = () => { clearTimeout(timeout); done(); };
         audio.onerror = () => { clearTimeout(timeout); done(); };
@@ -817,29 +787,22 @@ const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 let board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
 let pieceVariant = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
 
-let playerColor = 1;
-let cpuColor = 2;
-let finalBlackCount = 0;
-let finalWhiteCount = 0;
+let playerColor = 1, cpuColor = 2;
+let finalBlackCount = 0, finalWhiteCount = 0;
 
 let reversePlayerSounds = [], reverseCpuSounds = [];
-let winResultSoundsArray = [];
-let loseResultSoundsArray = [];
-
-let bgmAudio = null;
-let titleBGM = null;
-let winSeAudio = null;
-let clapAudio = null;
-let loseSeAudio = null;
-let loseSakebiAudio = null;
+let winResultSoundsArray = [], loseResultSoundsArray = [];
+let bgmAudio = null, titleBGM = null;
+let winSeAudio = null, clapAudio = null;
+let loseSeAudio = null, loseSakebiAudio = null;
 let drumRoalAudio = null;
-let drawSeAudio = null;
-let drawVoiceAudio = null;
-let drawResultAudio = null;
+let drawSeAudio = null, drawVoiceAudio = null, drawResultAudio = null;
 
 let voiceVolume = 0.9;
 let bgmVolume = 0.2;
-let soundEnabled = false;
+let soundEnabled = false;   // 全体ON/OFF（右上ボタン）
+let seEnabled = true;       // SE個別ON/OFF
+let bgmEnabled = true;      // BGM個別ON/OFF
 let audioContextUnlocked = false;
 let resultPhaseActive = false;
 
@@ -849,13 +812,9 @@ let gameOver = false;
 let isFlipping = false;
 let modalOpenedFrom = null;
 
-let blackPieceImgs = [];
-let whitePieceImgs = [];
+let blackPieceImgs = [], whitePieceImgs = [];
 let whiteSpecialImg = new Image();
-let winBlackImg = new Image();
-let winWhiteImg = new Image();
-let winSpecialImg = new Image();
-
+let winBlackImg = new Image(), winWhiteImg = new Image(), winSpecialImg = new Image();
 let CELL_SIZE = 105;
 let currentDPR = 1;
 
@@ -878,12 +837,11 @@ function getFlips(r, c, player) {
 
 function getValidMoves(player) {
     let moves = [];
-    for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let r = 0; r < BOARD_SIZE; r++)
         for (let c = 0; c < BOARD_SIZE; c++) {
-            const flips = getFlips(r, c, player);
-            if (flips.length) moves.push({r, c, flips});
+            const f = getFlips(r, c, player);
+            if (f.length) moves.push({r, c, flips: f});
         }
-    }
     return moves;
 }
 
@@ -892,16 +850,14 @@ function resizeCanvas() {
     if (!container) return;
     currentDPR = window.devicePixelRatio || 1;
     const rect = container.getBoundingClientRect();
-    const computedStyle = getComputedStyle(container);
-    const border = parseFloat(computedStyle.borderWidth) || 18;
-    const padding = parseFloat(computedStyle.padding) || 18;
-    const innerWidth = rect.width - 2 * (border + padding);
-    canvas.width = innerWidth * currentDPR;
-    canvas.height = innerWidth * currentDPR;
-    canvas.style.width = `${innerWidth}px`;
-    canvas.style.height = `${innerWidth}px`;
+    const cs = getComputedStyle(container);
+    const border = parseFloat(cs.borderWidth) || 18;
+    const padding = parseFloat(cs.padding) || 18;
+    const iw = rect.width - 2 * (border + padding);
+    canvas.width = iw * currentDPR; canvas.height = iw * currentDPR;
+    canvas.style.width = `${iw}px`; canvas.style.height = `${iw}px`;
     ctx.scale(currentDPR, currentDPR);
-    CELL_SIZE = innerWidth / BOARD_SIZE;
+    CELL_SIZE = iw / BOARD_SIZE;
     drawBoard();
 }
 
@@ -911,72 +867,62 @@ function drawBoard(showFilter = false) {
     ctx.fillRect(0, 0, canvas.width / currentDPR, canvas.height / currentDPR);
     ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
     for (let i = 0; i <= BOARD_SIZE; i++) {
-        ctx.beginPath(); ctx.moveTo(i*CELL_SIZE, 0); ctx.lineTo(i*CELL_SIZE, canvas.height / currentDPR); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i*CELL_SIZE); ctx.lineTo(canvas.width / currentDPR, i*CELL_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i*CELL_SIZE, 0); ctx.lineTo(i*CELL_SIZE, canvas.height/currentDPR); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i*CELL_SIZE); ctx.lineTo(canvas.width/currentDPR, i*CELL_SIZE); ctx.stroke();
     }
-    for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let r = 0; r < BOARD_SIZE; r++)
         for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === 0) continue;
-            const x = c * CELL_SIZE + CELL_SIZE / 2;
-            const y = r * CELL_SIZE + CELL_SIZE / 2;
+            if (!board[r][c]) continue;
+            const x = c*CELL_SIZE + CELL_SIZE/2, y = r*CELL_SIZE + CELL_SIZE/2;
             const size = CELL_SIZE * 0.42;
             const img = pieceVariant[r][c];
-            if (img && img.complete) {
-                ctx.drawImage(img, x - size, y - size, size*2, size*2);
-            }
+            if (img && img.complete) ctx.drawImage(img, x-size, y-size, size*2, size*2);
         }
-    }
     if (!isFlipping && currentPlayer === playerColor && !gameOver) {
-        const moves = getValidMoves(playerColor);
         ctx.fillStyle = 'rgba(255,215,0,0.4)';
-        for (let m of moves) {
-            const x = m.c * CELL_SIZE + CELL_SIZE / 2;
-            const y = m.r * CELL_SIZE + CELL_SIZE / 2;
-            ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI*2); ctx.fill();
+        for (let m of getValidMoves(playerColor)) {
+            ctx.beginPath();
+            ctx.arc(m.c*CELL_SIZE+CELL_SIZE/2, m.r*CELL_SIZE+CELL_SIZE/2, 18, 0, Math.PI*2);
+            ctx.fill();
         }
     }
     if (showFilter) {
         ctx.fillStyle = 'rgba(0,0,0,0.65)';
-        ctx.fillRect(0, 0, canvas.width / currentDPR, canvas.height / currentDPR);
+        ctx.fillRect(0, 0, canvas.width/currentDPR, canvas.height/currentDPR);
     }
 }
 
 async function placePiece(r, c, placingColor) {
     if (gameOver || isFlipping) return;
     const flips = getFlips(r, c, placingColor);
-    if (flips.length === 0) return;
+    if (!flips.length) return;
     isFlipping = true;
-    let placedImg = placingColor === 1 
+    let placedImg = placingColor === 1
         ? blackPieceImgs[Math.floor(Math.random() * blackPieceImgs.length)]
         : (Math.random() < 1/1017 ? whiteSpecialImg : whitePieceImgs[Math.floor(Math.random() * whitePieceImgs.length)]);
-    board[r][c] = placingColor;
-    pieceVariant[r][c] = placedImg;
-    drawBoard();
-    let reverseList = placingColor === playerColor ? reversePlayerSounds : 
-        (flips.length === 1 || flips.length >= 5 ? reverseCpuSounds : reverseCpuSounds.filter((_, i) => i !== 2));
-    let chosenReverse = reverseList[Math.floor(Math.random() * reverseList.length)];
+    board[r][c] = placingColor; pieceVariant[r][c] = placedImg; drawBoard();
+    let revList = placingColor === playerColor ? reversePlayerSounds
+        : (flips.length === 1 || flips.length >= 5 ? reverseCpuSounds : reverseCpuSounds.filter((_,i) => i !== 2));
+    let chosenRev = revList[Math.floor(Math.random() * revList.length)];
     for (let i = 0; i < flips.length; i++) {
         const [fr, fc] = flips[i];
         await new Promise(resolve => {
             setTimeout(() => {
                 board[fr][fc] = placingColor;
-                let flipImg = placingColor === 1 
+                let fi = placingColor === 1
                     ? blackPieceImgs[Math.floor(Math.random() * blackPieceImgs.length)]
                     : (Math.random() < 1/1017 ? whiteSpecialImg : whitePieceImgs[Math.floor(Math.random() * whitePieceImgs.length)]);
-                pieceVariant[fr][fc] = flipImg;
-                drawBoard();
-                if (chosenReverse && soundEnabled) {
-                    chosenReverse.currentTime = 0;
-                    chosenReverse.volume = voiceVolume;
-                    chosenReverse.play().then(() => chosenReverse.onended = () => resolve()).catch(() => resolve());
+                pieceVariant[fr][fc] = fi; drawBoard();
+                if (chosenRev && soundEnabled && seEnabled) {
+                    chosenRev.currentTime = 0; chosenRev.volume = voiceVolume;
+                    chosenRev.play().then(() => chosenRev.onended = () => resolve()).catch(() => resolve());
                 } else resolve();
             }, i * 30);
         });
     }
     isFlipping = false;
     currentPlayer = placingColor === 1 ? 2 : 1;
-    updateStatus();
-    drawBoard();
+    updateStatus(); drawBoard();
     setTimeout(() => { if (!gameOver) checkNextTurn(); }, 300);
 }
 
@@ -988,15 +934,10 @@ function updateStatus() {
 
 function checkNextTurn() {
     const moves = getValidMoves(currentPlayer);
-    if (moves.length === 0) {
+    if (!moves.length) {
         const next = currentPlayer === 1 ? 2 : 1;
-        if (getValidMoves(next).length === 0) endGame();
-        else {
-            currentPlayer = next;
-            updateStatus();
-            drawBoard();
-            if (currentPlayer === cpuColor) cpuTurn();
-        }
+        if (!getValidMoves(next).length) endGame();
+        else { currentPlayer = next; updateStatus(); drawBoard(); if (currentPlayer === cpuColor) cpuTurn(); }
         return;
     }
     if (currentPlayer === cpuColor) cpuTurn();
@@ -1004,15 +945,15 @@ function checkNextTurn() {
 
 function cpuTurn() {
     const moves = getValidMoves(cpuColor);
-    if (moves.length === 0) return;
+    if (!moves.length) return;
     let chosen;
     if (cpuStrength === 'よわい') chosen = moves[Math.floor(Math.random() * moves.length)];
     else if (cpuStrength === 'ふつう') chosen = moves.reduce((a, b) => a.flips.length > b.flips.length ? a : b);
     else {
         let best = -9999;
         for (let m of moves) {
-            let score = m.flips.length * 10 + positionWeight[m.r][m.c];
-            if (score > best) { best = score; chosen = m; }
+            let sc = m.flips.length * 10 + positionWeight[m.r][m.c];
+            if (sc > best) { best = sc; chosen = m; }
         }
     }
     setTimeout(() => placePiece(chosen.r, chosen.c, cpuColor), 800);
@@ -1026,68 +967,55 @@ const positionWeight = [
 ];
 
 function endGame() {
-    gameOver = true;
-    resultPhaseActive = true;
+    gameOver = true; resultPhaseActive = true;
     if (bgmAudio) bgmAudio.pause();
     let black = 0, white = 0;
-    for (let r = 0; r < BOARD_SIZE; r++) for (let c = 0; c < BOARD_SIZE; c++) {
-        if (board[r][c] === 1) black++;
-        if (board[r][c] === 2) white++;
-    }
+    for (let r = 0; r < BOARD_SIZE; r++)
+        for (let c = 0; c < BOARD_SIZE; c++) { if (board[r][c]===1) black++; if (board[r][c]===2) white++; }
     finalBlackCount = black; finalWhiteCount = white;
     document.getElementById('status-bar').innerHTML = '最終スコアを並べています…';
     setTimeout(() => runScoreAndResultSequence(), 800);
 }
 
 async function runScoreAndResultSequence() {
-    board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
-    pieceVariant = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+    board = Array.from({length:BOARD_SIZE}, ()=>Array(BOARD_SIZE).fill(0));
+    pieceVariant = Array.from({length:BOARD_SIZE}, ()=>Array(BOARD_SIZE).fill(null));
     drawBoard();
-
     let drumPromise = Promise.resolve();
-    if (soundEnabled && drumRoalAudio) {
-        drumPromise = playSoundAndWait(drumRoalAudio, 8000);
-    }
-
+    if (soundEnabled && seEnabled && drumRoalAudio) drumPromise = playSoundAndWait(drumRoalAudio, 8000);
     const total = finalBlackCount + finalWhiteCount;
     const interval = total > 0 ? 3000 / total : 35;
-    let blackPlaced = 0, whitePlaced = 0;
-
+    let bp = 0, wp = 0;
     await new Promise(resolve => {
         const placeNext = () => {
             let didPlace = false;
-            if (blackPlaced < finalBlackCount) {
-                const idx = blackPlaced;
-                board[Math.floor(idx / BOARD_SIZE)][idx % BOARD_SIZE] = 1;
-                pieceVariant[Math.floor(idx / BOARD_SIZE)][idx % BOARD_SIZE] = blackPieceImgs[Math.floor(Math.random() * blackPieceImgs.length)];
-                blackPlaced++; didPlace = true;
+            if (bp < finalBlackCount) {
+                const idx = bp;
+                board[Math.floor(idx/BOARD_SIZE)][idx%BOARD_SIZE] = 1;
+                pieceVariant[Math.floor(idx/BOARD_SIZE)][idx%BOARD_SIZE] = blackPieceImgs[Math.floor(Math.random()*blackPieceImgs.length)];
+                bp++; didPlace = true;
             }
-            if (whitePlaced < finalWhiteCount) {
-                const idx = whitePlaced;
-                const pos = (BOARD_SIZE * BOARD_SIZE - 1) - idx;
-                board[Math.floor(pos / BOARD_SIZE)][pos % BOARD_SIZE] = 2;
-                pieceVariant[Math.floor(pos / BOARD_SIZE)][pos % BOARD_SIZE] = (Math.random() < 1/1017) ? whiteSpecialImg : whitePieceImgs[Math.floor(Math.random() * whitePieceImgs.length)];
-                whitePlaced++; didPlace = true;
+            if (wp < finalWhiteCount) {
+                const idx = wp, pos = (BOARD_SIZE*BOARD_SIZE-1)-idx;
+                board[Math.floor(pos/BOARD_SIZE)][pos%BOARD_SIZE] = 2;
+                pieceVariant[Math.floor(pos/BOARD_SIZE)][pos%BOARD_SIZE] = (Math.random()<1/1017) ? whiteSpecialImg : whitePieceImgs[Math.floor(Math.random()*whitePieceImgs.length)];
+                wp++; didPlace = true;
             }
             drawBoard();
-            if (didPlace) setTimeout(placeNext, interval);
-            else resolve();
+            if (didPlace) setTimeout(placeNext, interval); else resolve();
         };
         placeNext();
     });
-
     await drumPromise;
     showWinLoseOverlayAndProceed();
 }
 
 async function showWinLoseOverlayAndProceed() {
-    const playerFinal = playerColor === 1 ? finalBlackCount : finalWhiteCount;
-    const cpuFinal = playerColor === 1 ? finalWhiteCount : finalBlackCount;
-    const isWin = playerFinal > cpuFinal;
-    const isDraw = playerFinal === cpuFinal;
+    const pf = playerColor === 1 ? finalBlackCount : finalWhiteCount;
+    const cf = playerColor === 1 ? finalWhiteCount : finalBlackCount;
+    const isWin = pf > cf, isDraw = pf === cf;
     showWinLoseOverlay(isWin ? 'win' : isDraw ? 'draw' : 'lose');
-
-    if (!soundEnabled) {
+    if (!soundEnabled || !seEnabled) {
         await new Promise(resolve => setTimeout(resolve, 2000));
     } else if (isWin) {
         await Promise.all([playSoundAndWait(winSeAudio, 6000), playSoundAndWait(clapAudio, 6000)]);
@@ -1102,15 +1030,10 @@ async function showWinLoseOverlayAndProceed() {
 function showWinLoseOverlay(type) {
     const overlay = document.getElementById('win-lose-overlay');
     const img = document.getElementById('win-lose-image');
-    if (type === 'win') img.src = 'win.png';
-    else if (type === 'lose') img.src = 'lose.png';
-    else if (type === 'draw') img.src = 'draw.png';
+    img.src = type === 'win' ? 'win.png' : type === 'lose' ? 'lose.png' : 'draw.png';
     overlay.style.display = 'flex';
 }
-
-function hideWinLoseOverlay() {
-    document.getElementById('win-lose-overlay').style.display = 'none';
-}
+function hideWinLoseOverlay() { document.getElementById('win-lose-overlay').style.display = 'none'; }
 
 function showResultScreen() {
     hideWinLoseOverlay();
@@ -1119,29 +1042,44 @@ function showResultScreen() {
     resultPhaseActive = false;
     document.getElementById('result-screen').style.display = 'flex';
 
-    const playerFinal = playerColor === 1 ? finalBlackCount : finalWhiteCount;
-    const cpuFinal = playerColor === 1 ? finalWhiteCount : finalBlackCount;
+    const pf = playerColor === 1 ? finalBlackCount : finalWhiteCount;
+    const cf = playerColor === 1 ? finalWhiteCount : finalBlackCount;
     const titleEl = document.getElementById('result-title');
     const winnerImg = document.getElementById('winner-char-img');
 
-    document.getElementById('final-player-count').textContent = playerFinal;
-    document.getElementById('final-cpu-count').textContent = cpuFinal;
+    document.getElementById('final-player-count').textContent = pf;
+    document.getElementById('final-cpu-count').textContent = cf;
 
-    if (playerFinal > cpuFinal) {
+    // 前回の王冠を削除
+    document.querySelectorAll('.winner-crown').forEach(el => el.remove());
+
+    if (pf > cf) {
         titleEl.textContent = 'WIN'; titleEl.style.color = '#ffd700';
         const winSrc = Math.random() < 1/1017 ? 'win_s.png' : (playerColor === 1 ? 'win_black.png' : 'win_white.png');
         winnerImg.innerHTML = `<img src="${winSrc}" style="width:100%;height:100%;object-fit:contain;">`;
-        document.getElementById('player-count-area').innerHTML += `<span style="position:absolute;left:-28px;top:12px;font-size:36px;animation:snowRotate 3s linear infinite;">❄️</span>`;
-        if (winResultSoundsArray.length) playSound(winResultSoundsArray[Math.floor(Math.random() * winResultSoundsArray.length)]);
-    } else if (cpuFinal > playerFinal) {
+        // 王冠をplayerのスコアエリアに追加
+        const crown = document.createElement('span');
+        crown.className = 'winner-crown';
+        crown.textContent = '👑';
+        crown.style.left = '-36px'; crown.style.top = '4px';
+        document.getElementById('player-count-area').appendChild(crown);
+        if (soundEnabled && seEnabled && winResultSoundsArray.length)
+            playSound(winResultSoundsArray[Math.floor(Math.random() * winResultSoundsArray.length)]);
+    } else if (cf > pf) {
         titleEl.textContent = 'LOSE'; titleEl.style.color = '#ff4444';
-        winnerImg.innerHTML = `<img src="${playerColor === 1 ? 'lose_black.png' : 'lose_white.png'}" style="width:100%;height:100%;object-fit:contain;">`;
-        document.getElementById('cpu-count-area').innerHTML += `<span style="position:absolute;right:-28px;top:12px;font-size:36px;animation:snowRotate 3s linear infinite;">❄️</span>`;
-        if (loseResultSoundsArray.length) playSound(loseResultSoundsArray[Math.floor(Math.random() * loseResultSoundsArray.length)]);
+        winnerImg.innerHTML = `<img src="${playerColor===1?'lose_black.png':'lose_white.png'}" style="width:100%;height:100%;object-fit:contain;">`;
+        // 王冠をCPUのスコアエリアに追加
+        const crown = document.createElement('span');
+        crown.className = 'winner-crown';
+        crown.textContent = '👑';
+        crown.style.right = '-36px'; crown.style.top = '4px';
+        document.getElementById('cpu-count-area').appendChild(crown);
+        if (soundEnabled && seEnabled && loseResultSoundsArray.length)
+            playSound(loseResultSoundsArray[Math.floor(Math.random() * loseResultSoundsArray.length)]);
     } else {
         titleEl.textContent = 'DRAW'; titleEl.style.color = '#aaa';
         winnerImg.innerHTML = `<img src="draw_result.png" style="width:100%;height:100%;object-fit:contain;">`;
-        playSound(drawResultAudio);
+        if (soundEnabled && seEnabled) playSound(drawResultAudio);
     }
 }
 
@@ -1157,11 +1095,10 @@ function createStrengthSelect() {
     data.forEach(item => {
         const btn = document.createElement('div');
         btn.className = 'strength-btn';
-        btn.innerHTML = `<img src="${item.img}" style="width:110px;height:110px;margin-bottom:6px;"> <div>${item.name}</div>`;
+        btn.innerHTML = `<img src="${item.img}"><div>${item.name}</div>`;
         btn.addEventListener('click', () => {
             document.querySelectorAll('#strength-select .strength-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            cpuStrength = item.val;
+            btn.classList.add('selected'); cpuStrength = item.val;
         });
         container.appendChild(btn);
         if (item.val === 'ふつう') btn.classList.add('selected');
@@ -1178,11 +1115,10 @@ function createColorSelect() {
     data.forEach(item => {
         const btn = document.createElement('div');
         btn.className = 'strength-btn';
-        btn.innerHTML = `<img src="${item.img}" style="width:110px;height:110px;margin-bottom:6px;"> <div>${item.name}</div>`;
+        btn.innerHTML = `<img src="${item.img}"><div>${item.name}</div>`;
         btn.addEventListener('click', () => {
             document.querySelectorAll('#color-select .strength-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            playerColor = item.val;
+            btn.classList.add('selected'); playerColor = item.val;
         });
         container.appendChild(btn);
         if (item.val === 1) btn.classList.add('selected');
@@ -1191,10 +1127,10 @@ function createColorSelect() {
 
 // ====================== 音量反映 ======================
 function applyVolumeToAll() {
-    const voiceSlider = document.getElementById('voice-volume-slider');
-    const bgmSlider = document.getElementById('bgm-volume-slider');
-    voiceVolume = parseFloat(voiceSlider.value);
-    bgmVolume = parseFloat(bgmSlider.value);
+    const vs = document.getElementById('voice-volume-slider');
+    const bs = document.getElementById('bgm-volume-slider');
+    voiceVolume = parseFloat(vs.value);
+    bgmVolume = parseFloat(bs.value);
     const allSE = [
         ...reversePlayerSounds, ...reverseCpuSounds,
         winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio,
@@ -1206,44 +1142,30 @@ function applyVolumeToAll() {
     if (titleBGM) titleBGM.volume = bgmVolume;
 }
 
-// ====================== スライダー：PointerEventsで完全対応 ======================
-// PC(mouse) / スマホ(touch/pen) 両方で確実に動作する
+// ====================== スライダー：PointerEvents完全対応 ======================
 function setupSlider(slider) {
-    let isDragging = false;
-
-    const updateFromPointer = (e) => {
+    let dragging = false;
+    const update = (e) => {
         const rect = slider.getBoundingClientRect();
         const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const min = parseFloat(slider.min);
-        const max = parseFloat(slider.max);
-        const step = parseFloat(slider.step);
-        const rawVal = min + ratio * (max - min);
-        slider.value = (Math.round(rawVal / step) * step).toFixed(1);
+        const min = parseFloat(slider.min), max = parseFloat(slider.max), step = parseFloat(slider.step);
+        slider.value = (Math.round((min + ratio * (max - min)) / step) * step).toFixed(1);
         applyVolumeToAll();
     };
-
-    slider.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        slider.setPointerCapture(e.pointerId);
-        updateFromPointer(e);
-    });
-
-    slider.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        updateFromPointer(e);
-    });
-
-    slider.addEventListener('pointerup', (e) => {
-        isDragging = false;
-        updateFromPointer(e);
-        slider.releasePointerCapture(e.pointerId);
-    });
-
-    slider.addEventListener('pointercancel', () => { isDragging = false; });
-
-    // フォールバック（通常のinput/change）
+    slider.addEventListener('pointerdown', e => { dragging = true; slider.setPointerCapture(e.pointerId); update(e); });
+    slider.addEventListener('pointermove', e => { if (dragging) update(e); });
+    slider.addEventListener('pointerup', e => { dragging = false; update(e); slider.releasePointerCapture(e.pointerId); });
+    slider.addEventListener('pointercancel', () => { dragging = false; });
     slider.addEventListener('input', applyVolumeToAll);
     slider.addEventListener('change', applyVolumeToAll);
+}
+
+// ====================== SE/BGM個別トグル更新 ======================
+function updateSoundToggleButtons() {
+    const seBtn = document.getElementById('se-toggle-btn');
+    const bgmBtn = document.getElementById('bgm-toggle-option-btn');
+    if (seBtn) { seBtn.textContent = `SE：${seEnabled ? 'ON' : 'OFF'}`; seBtn.classList.toggle('off', !seEnabled); }
+    if (bgmBtn) { bgmBtn.textContent = `BGM：${bgmEnabled ? 'ON' : 'OFF'}`; bgmBtn.classList.toggle('off', !bgmEnabled); }
 }
 
 // ====================== イベント設定 ======================
@@ -1253,10 +1175,9 @@ function setupEvents() {
         const rect = canvas.getBoundingClientRect();
         let x = (isTouch ? e.touches[0].clientX : e.clientX) - rect.left;
         let y = (isTouch ? e.touches[0].clientY : e.clientY) - rect.top;
-        const logicalX = x * (canvas.width / rect.width) / currentDPR;
-        const logicalY = y * (canvas.height / rect.height) / currentDPR;
-        const r = Math.floor(logicalY / CELL_SIZE);
-        const c = Math.floor(logicalX / CELL_SIZE);
+        const lx = x * (canvas.width / rect.width) / currentDPR;
+        const ly = y * (canvas.height / rect.height) / currentDPR;
+        const r = Math.floor(ly / CELL_SIZE), c = Math.floor(lx / CELL_SIZE);
         if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) return;
         placePiece(r, c, playerColor);
     }
@@ -1274,16 +1195,32 @@ function setupEvents() {
         document.getElementById('btn-title-back').style.display = 'none';
     });
 
-    // スライダー：PointerEventsベースで設定
     setupSlider(document.getElementById('voice-volume-slider'));
     setupSlider(document.getElementById('bgm-volume-slider'));
+
+    // SE個別ON/OFF
+    document.getElementById('se-toggle-btn').addEventListener('click', () => {
+        seEnabled = !seEnabled;
+        updateSoundToggleButtons();
+    });
+    // BGM個別ON/OFF
+    document.getElementById('bgm-toggle-option-btn').addEventListener('click', () => {
+        bgmEnabled = !bgmEnabled;
+        if (bgmEnabled && soundEnabled) {
+            if (titleBGM && document.getElementById('title-screen').style.display !== 'none') setTimeout(() => playBGM(titleBGM), 50);
+            else if (bgmAudio && document.getElementById('game-screen').style.display !== 'none' && !gameOver) setTimeout(() => playBGM(bgmAudio), 50);
+        } else {
+            if (titleBGM) titleBGM.pause();
+            if (bgmAudio) bgmAudio.pause();
+        }
+        updateSoundToggleButtons();
+    });
 
     document.getElementById('btn-close-option').addEventListener('click', () => {
         document.getElementById('option-modal').style.display = 'none';
     });
     document.getElementById('btn-title-back').addEventListener('click', () => {
-        document.getElementById('option-modal').style.display = 'none';
-        goToTitle();
+        document.getElementById('option-modal').style.display = 'none'; goToTitle();
     });
 
     document.getElementById('close-end-modal').addEventListener('click', () => {
@@ -1307,8 +1244,7 @@ function setupEvents() {
         soundEnabled = true;
         document.getElementById('bgm-confirm-modal').style.display = 'none';
         unlockAudioContext();
-        // ★ 1フレーム遅らせることでアンロック完了後にBGMを再生
-        setTimeout(() => { if (soundEnabled && titleBGM) playSound(titleBGM); }, 50);
+        setTimeout(() => { if (soundEnabled && bgmEnabled && titleBGM) playBGM(titleBGM); }, 50);
         updateBgmToggleIcon();
     });
     document.getElementById('bgm-no-btn').addEventListener('click', () => {
@@ -1323,12 +1259,9 @@ function setupEvents() {
             unlockAudioContext();
             if (resultPhaseActive) { updateBgmToggleIcon(); return; }
             setTimeout(() => {
-                if (!soundEnabled) return;
-                if (titleBGM && document.getElementById('title-screen').style.display !== 'none') {
-                    playSound(titleBGM);
-                } else if (bgmAudio && document.getElementById('game-screen').style.display !== 'none' && !gameOver) {
-                    playSound(bgmAudio);
-                }
+                if (!soundEnabled || !bgmEnabled) return;
+                if (titleBGM && document.getElementById('title-screen').style.display !== 'none') playBGM(titleBGM);
+                else if (bgmAudio && document.getElementById('game-screen').style.display !== 'none' && !gameOver) playBGM(bgmAudio);
             }, 50);
         } else {
             if (titleBGM) titleBGM.pause();
@@ -1336,6 +1269,23 @@ function setupEvents() {
         }
         updateBgmToggleIcon();
     });
+
+    // サブタイトル長押しで表示
+    const subtitle = document.getElementById('subtitle-text');
+    let subtitleTimer = null;
+    const showSubtitle = () => { subtitle.classList.add('visible'); };
+    const hideSubtitle = () => { subtitle.classList.remove('visible'); };
+    subtitle.addEventListener('touchstart', e => {
+        subtitleTimer = setTimeout(showSubtitle, 400);
+    }, { passive: true });
+    subtitle.addEventListener('touchend', () => {
+        clearTimeout(subtitleTimer);
+        setTimeout(hideSubtitle, 1200);
+    });
+    subtitle.addEventListener('touchcancel', () => { clearTimeout(subtitleTimer); hideSubtitle(); });
+    // PC版はホバー時に表示
+    subtitle.addEventListener('mouseenter', showSubtitle);
+    subtitle.addEventListener('mouseleave', hideSubtitle);
 }
 
 function updateBgmToggleIcon() {
@@ -1345,21 +1295,10 @@ function updateBgmToggleIcon() {
 async function startGame() {
     initBoard();
     cpuColor = 3 - playerColor;
-    currentPlayer = 1;
-    gameOver = false;
-    isFlipping = false;
-    resultPhaseActive = false;
-
-    if (soundEnabled) {
-        unlockAudioContext();
-    }
-
+    currentPlayer = 1; gameOver = false; isFlipping = false; resultPhaseActive = false;
+    if (soundEnabled) unlockAudioContext();
     if (titleBGM) titleBGM.pause();
-    // ★ 1フレーム遅らせてBGM再生（アンロックとの競合を避ける）
-    if (soundEnabled && bgmAudio) {
-        setTimeout(() => playSound(bgmAudio), 50);
-    }
-
+    if (soundEnabled && bgmEnabled && bgmAudio) setTimeout(() => playBGM(bgmAudio), 50);
     document.getElementById('title-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'flex';
     document.getElementById('result-screen').style.display = 'none';
@@ -1367,30 +1306,21 @@ async function startGame() {
 
     const pSrc = playerColor === 1 ? '黒5.png' : '白7.png';
     const cpuImgSrc = cpuStrength === 'よわい' ? 'easy.png' : cpuStrength === 'ふつう' ? 'normal.png' : 'hard.png';
-
     document.getElementById('player-char-img-pc').innerHTML = `<img src="${pSrc}">`;
     document.getElementById('opponent-char-img-pc').innerHTML = `<img src="${cpuImgSrc}">`;
-    document.getElementById('player-label-pc').innerHTML = `YOU (${playerColor === 1 ? '黒' : '白'})`;
+    document.getElementById('player-label-pc').innerHTML = `YOU (${playerColor===1?'黒':'白'})`;
     document.getElementById('opponent-label-pc').innerHTML = `ENEMY (${cpuStrength})`;
-
     document.getElementById('player-char-img-mobile').innerHTML = `<img src="${pSrc}">`;
     document.getElementById('opponent-char-img-mobile').innerHTML = `<img src="${cpuImgSrc}">`;
-    document.getElementById('player-label-mobile').innerHTML = `YOU (${playerColor === 1 ? '黒' : '白'})`;
+    document.getElementById('player-label-mobile').innerHTML = `YOU (${playerColor===1?'黒':'白'})`;
     document.getElementById('opponent-label-mobile').innerHTML = `ENEMY (${cpuStrength})`;
 
     const isMobile = window.innerWidth <= 768;
-    if (!isMobile) {
-        document.getElementById('player-info-pc').style.display = 'flex';
-        document.getElementById('opponent-info-pc').style.display = 'flex';
-        document.getElementById('smartphone-top-bar').style.display = 'none';
-    } else {
-        document.getElementById('player-info-pc').style.display = 'none';
-        document.getElementById('opponent-info-pc').style.display = 'none';
-        document.getElementById('smartphone-top-bar').style.display = 'flex';
-    }
+    document.getElementById('player-info-pc').style.display = isMobile ? 'none' : 'flex';
+    document.getElementById('opponent-info-pc').style.display = isMobile ? 'none' : 'flex';
+    document.getElementById('smartphone-top-bar').style.display = isMobile ? 'flex' : 'none';
 
-    resizeCanvas();
-    updateStatus();
+    resizeCanvas(); updateStatus();
     setTimeout(() => { drawBoard(); checkNextTurn(); }, 50);
 }
 
@@ -1403,19 +1333,18 @@ function goToTitle() {
     document.getElementById('title-screen').style.display = 'flex';
     if (bgmAudio) bgmAudio.pause();
     resultPhaseActive = false;
-    if (soundEnabled && titleBGM) setTimeout(() => playSound(titleBGM), 50);
-    gameOver = true;
-    isFlipping = false;
+    if (soundEnabled && bgmEnabled && titleBGM) setTimeout(() => playBGM(titleBGM), 50);
+    gameOver = true; isFlipping = false;
 }
 
 function initBoard() {
-    board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
-    pieceVariant = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
-    board[3][3] = 2; board[3][4] = 1; board[4][3] = 1; board[4][4] = 2;
-    pieceVariant[3][3] = whitePieceImgs[Math.floor(Math.random() * whitePieceImgs.length)];
-    pieceVariant[3][4] = blackPieceImgs[Math.floor(Math.random() * blackPieceImgs.length)];
-    pieceVariant[4][3] = blackPieceImgs[Math.floor(Math.random() * blackPieceImgs.length)];
-    pieceVariant[4][4] = whitePieceImgs[Math.floor(Math.random() * whitePieceImgs.length)];
+    board = Array.from({length:BOARD_SIZE}, ()=>Array(BOARD_SIZE).fill(0));
+    pieceVariant = Array.from({length:BOARD_SIZE}, ()=>Array(BOARD_SIZE).fill(null));
+    board[3][3]=2; board[3][4]=1; board[4][3]=1; board[4][4]=2;
+    pieceVariant[3][3] = whitePieceImgs[Math.floor(Math.random()*whitePieceImgs.length)];
+    pieceVariant[3][4] = blackPieceImgs[Math.floor(Math.random()*blackPieceImgs.length)];
+    pieceVariant[4][3] = blackPieceImgs[Math.floor(Math.random()*blackPieceImgs.length)];
+    pieceVariant[4][4] = whitePieceImgs[Math.floor(Math.random()*whitePieceImgs.length)];
 }
 
 function createSnowflakes() {
@@ -1438,88 +1367,61 @@ const API_KEY = 'AIzaSyAeaUmJu-vrvPkE-x4SJZZIRy1hbRL5jbo';
 const CHANNEL_ID = 'UCQsuThhsBtHln3nCOcX-pfg';
 
 async function fetchLatestStream() {
-    const embedContainer = document.getElementById('latest-embed');
-    const noMessage = document.getElementById('no-latest-message');
+    const ec = document.getElementById('latest-embed'), nm = document.getElementById('no-latest-message');
     try {
-        const searchResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=completed&type=video&order=date&maxResults=1&key=${API_KEY}`);
-        const searchData = await searchResponse.json();
-        if (searchData.items && searchData.items.length > 0) {
-            const videoId = searchData.items[0].id.videoId;
-            const title = searchData.items[0].snippet.title;
-            const videoResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoId}&key=${API_KEY}`);
-            const videoData = await videoResponse.json();
-            let scheduledDate = new Date(searchData.items[0].snippet.publishedAt).toLocaleDateString('ja-JP');
-            if (videoData.items[0].liveStreamingDetails && videoData.items[0].liveStreamingDetails.actualStartTime) {
-                scheduledDate = new Date(videoData.items[0].liveStreamingDetails.actualStartTime).toLocaleDateString('ja-JP');
-            }
+        const sd = await (await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=completed&type=video&order=date&maxResults=1&key=${API_KEY}`)).json();
+        if (sd.items && sd.items.length > 0) {
+            const vid = sd.items[0].id.videoId, title = sd.items[0].snippet.title;
+            const vd = await (await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${vid}&key=${API_KEY}`)).json();
+            let dt = new Date(sd.items[0].snippet.publishedAt).toLocaleDateString('ja-JP');
+            if (vd.items[0].liveStreamingDetails?.actualStartTime) dt = new Date(vd.items[0].liveStreamingDetails.actualStartTime).toLocaleDateString('ja-JP');
             const iframe = document.createElement('iframe');
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
-            iframe.width = '100%'; iframe.height = '210'; iframe.frameBorder = '0';
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            iframe.allowFullscreen = true;
-            embedContainer.appendChild(iframe);
-            const infoPara = document.createElement('p');
-            const link = document.createElement('a');
-            link.href = `https://www.youtube.com/watch?v=${videoId}`; link.target = '_blank'; link.textContent = title;
-            infoPara.appendChild(link);
-            infoPara.appendChild(document.createTextNode(` | 配信日: ${scheduledDate}`));
-            embedContainer.appendChild(infoPara);
-        } else { noMessage.style.display = 'block'; }
-    } catch (error) { console.error(error); noMessage.style.display = 'block'; }
+            iframe.src=`https://www.youtube.com/embed/${vid}?autoplay=0`; iframe.width='100%'; iframe.height='210'; iframe.frameBorder='0';
+            iframe.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'; iframe.allowFullscreen=true;
+            ec.appendChild(iframe);
+            const p = document.createElement('p'), a = document.createElement('a');
+            a.href=`https://www.youtube.com/watch?v=${vid}`; a.target='_blank'; a.textContent=title;
+            p.appendChild(a); p.appendChild(document.createTextNode(` | 配信日: ${dt}`)); ec.appendChild(p);
+        } else nm.style.display = 'block';
+    } catch(e) { console.error(e); nm.style.display = 'block'; }
 }
 
 async function fetchUpcomingStream() {
-    const embedContainer = document.getElementById('upcoming-embed');
-    const noStreamMessage = document.getElementById('no-stream-message');
+    const ec = document.getElementById('upcoming-embed'), nm = document.getElementById('no-stream-message');
     try {
-        const response = await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=upcoming&type=video&order=date&maxResults=10&key=${API_KEY}`);
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-            const videoIds = data.items.map(item => item.id.videoId).join(',');
-            const videoResponse = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoIds}&key=${API_KEY}`);
-            const videoData = await videoResponse.json();
-            const now = new Date().getTime();
-            let closestStream = null, minDiff = Infinity;
-            videoData.items.forEach(item => {
+        const d = await (await fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=upcoming&type=video&order=date&maxResults=10&key=${API_KEY}`)).json();
+        if (d.items && d.items.length > 0) {
+            const ids = d.items.map(i=>i.id.videoId).join(',');
+            const vd = await (await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${ids}&key=${API_KEY}`)).json();
+            const now = Date.now(); let cs = null, minDiff = Infinity;
+            vd.items.forEach(item => {
                 const t = item.liveStreamingDetails?.scheduledStartTime;
-                if (t) { const d = new Date(t).getTime() - now; if (d > 0 && d < minDiff) { minDiff = d; closestStream = item; } }
+                if (t) { const d = new Date(t).getTime()-now; if (d>0 && d<minDiff) { minDiff=d; cs=item; } }
             });
-            if (closestStream) {
-                const videoId = closestStream.id;
-                const title = closestStream.snippet.title;
-                const scheduledTime = new Date(closestStream.liveStreamingDetails.scheduledStartTime).toLocaleString('ja-JP');
+            if (cs) {
+                const vid=cs.id, title=cs.snippet.title, st=new Date(cs.liveStreamingDetails.scheduledStartTime).toLocaleString('ja-JP');
                 const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0`;
-                iframe.width = '100%'; iframe.height = '210'; iframe.frameBorder = '0';
-                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-                iframe.allowFullscreen = true;
-                embedContainer.appendChild(iframe);
-                const infoPara = document.createElement('p');
-                const link = document.createElement('a');
-                link.href = `https://www.youtube.com/watch?v=${videoId}`; link.target = '_blank'; link.textContent = title;
-                infoPara.appendChild(link);
-                infoPara.appendChild(document.createTextNode(` | 予定日時: ${scheduledTime}`));
-                embedContainer.appendChild(infoPara);
-            } else { noStreamMessage.style.display = 'block'; }
-        } else { noStreamMessage.style.display = 'block'; }
-    } catch (error) { console.error(error); noStreamMessage.style.display = 'block'; }
+                iframe.src=`https://www.youtube.com/embed/${vid}?autoplay=0`; iframe.width='100%'; iframe.height='210'; iframe.frameBorder='0';
+                iframe.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'; iframe.allowFullscreen=true;
+                ec.appendChild(iframe);
+                const p = document.createElement('p'), a = document.createElement('a');
+                a.href=`https://www.youtube.com/watch?v=${vid}`; a.target='_blank'; a.textContent=title;
+                p.appendChild(a); p.appendChild(document.createTextNode(` | 予定日時: ${st}`)); ec.appendChild(p);
+            } else nm.style.display = 'block';
+        } else nm.style.display = 'block';
+    } catch(e) { console.error(e); nm.style.display = 'block'; }
 }
 
 function init() {
-    initBoard();
-    initAudio();
-    loadImages();
-    createStrengthSelect();
-    createColorSelect();
+    initBoard(); initAudio(); loadImages();
+    createStrengthSelect(); createColorSelect();
     setupEvents();
+    updateSoundToggleButtons();
     document.getElementById('bgm-confirm-modal').style.display = 'flex';
     updateBgmToggleIcon();
     createSnowflakes();
     resizeCanvas();
-    window.addEventListener('resize', () => {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        resizeCanvas();
-    });
+    window.addEventListener('resize', () => { ctx.setTransform(1,0,0,1,0,0); resizeCanvas(); });
     fetchLatestStream();
     fetchUpcomingStream();
 }
