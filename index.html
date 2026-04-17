@@ -70,7 +70,7 @@
             width: 100%; height: 100%; z-index: 3;
         }
 
-        /* ====================== PC版（一切変更なし） ====================== */
+        /* PC版（一切変更なし） */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -101,7 +101,7 @@
             .opponent-info { order: 3; }
         }
 
-        /* ====================== スマホ版専用（構造レベルで最適化） ====================== */
+        /* スマホ版専用 */
         @media (max-width: 768px) {
             #board-container { 
                 width: 86vmin !important; 
@@ -111,7 +111,6 @@
                 padding: 10px; 
             }
             
-            /* スマホ専用上部バー（アイコンを盤の上部に強制固定） */
             .smartphone-top-bar {
                 width: 86vmin;
                 margin: 12px auto 18px !important;
@@ -138,9 +137,6 @@
                 padding: 0 8px 15px !important;
                 gap: 10px;
             }
-            .status-bar { font-size: 1.3rem; padding: 16px; }
-            
-            .game-header { padding: 12px 18px; }
         }
 
         canvas { 
@@ -297,7 +293,6 @@
         @keyframes snowRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         #bgm-toggle-btn { position: fixed; top: 20px; right: 20px; width: 56px; height: 56px; background: #ffd700; color: #0a3d0a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.95rem; box-shadow: 0 6px 18px rgba(0,0,0,0.4); cursor: pointer; z-index: 99999; }
 
-        /* NOW LOADING 表示 */
         #loading-screen {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -519,43 +514,46 @@ let winSpecialImg = new Image();
 let CELL_SIZE = 105;
 let currentDPR = 1;
 
-// ====================== スマホ専用読み込み待機 ======================
-async function waitForAllAssets() {
-    document.getElementById('loading-screen').style.display = 'flex';
-    
-    const imagePromises = [];
-    // 画像読み込み
+// ====================== loadImages（ここに先に定義） ======================
+function loadImages() {
+    blackPieceImgs = [];
     for (let i = 0; i <= 6; i++) {
         const img = new Image();
         img.src = i === 0 ? '黒.png' : `黒${i}.png`;
         blackPieceImgs.push(img);
-        imagePromises.push(new Promise(resolve => { img.onload = resolve; }));
     }
+    whitePieceImgs = [];
     for (let i = 0; i <= 7; i++) {
         const img = new Image();
         img.src = i === 0 ? '白.png' : `白${i}.png`;
         whitePieceImgs.push(img);
-        imagePromises.push(new Promise(resolve => { img.onload = resolve; }));
     }
     whiteSpecialImg.src = '白s.png';
     winBlackImg.src = 'win_black.png';
     winWhiteImg.src = 'win_white.png';
     winSpecialImg.src = 'win_s.png';
+}
+
+// ====================== 読み込み待機関数 ======================
+async function waitForAllAssets() {
+    document.getElementById('loading-screen').style.display = 'flex';
+    
+    loadImages(); // ここで先に画像をロード
+
+    const imagePromises = blackPieceImgs.map(img => new Promise(r => { img.onload = r; }));
     imagePromises.push(new Promise(r => { whiteSpecialImg.onload = r; }));
     imagePromises.push(new Promise(r => { winBlackImg.onload = r; }));
     imagePromises.push(new Promise(r => { winWhiteImg.onload = r; }));
     imagePromises.push(new Promise(r => { winSpecialImg.onload = r; }));
 
-    // 音声読み込み
+    // 音声
     const audioPromises = [];
-    // reverse
     for (let i = 1; i <= 10; i++) {
         const a = new Audio(`reverse${i}.mp3`);
         if (i <= 5) reversePlayerSounds.push(a);
         else reverseCpuSounds.push(a);
         audioPromises.push(new Promise(r => { a.oncanplaythrough = r; }));
     }
-    // win/lose/draw
     for (let i = 1; i <= 5; i++) {
         const wr = new Audio(`win_result${i}.mp3`); winResultSoundsArray.push(wr);
         const lr = new Audio(`lose_result${i}.mp3`); loseResultSoundsArray.push(lr);
@@ -785,7 +783,6 @@ function endGame() {
     setTimeout(() => runScoreAndResultSequence(), 800);
 }
 
-// ====================== 新しい最適化シーケンス（読み込み待機込み） ======================
 async function runScoreAndResultSequence() {
     board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
     pieceVariant = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
@@ -823,7 +820,6 @@ async function runScoreAndResultSequence() {
         if (didPlace) {
             setTimeout(placeNext, interval);
         } else {
-            // スマホ対策：必ず4秒以内に次へ
             const fallback = setTimeout(() => showWinLoseOverlayAndProceed(), 4000);
             if (drumRoalAudio) {
                 drumRoalAudio.onended = () => {
@@ -983,7 +979,6 @@ function setupEvents() {
     document.getElementById('option-btn').addEventListener('click', () => { modalOpenedFrom = 'game'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'inline-block'; });
     document.getElementById('title-option-btn').addEventListener('click', () => { modalOpenedFrom = 'title'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'none'; });
     
-    // 音量管理（スマホ最適化）
     const voiceSlider = document.getElementById('voice-volume-slider');
     const bgmSlider = document.getElementById('bgm-volume-slider');
     
@@ -997,11 +992,8 @@ function setupEvents() {
         if (bgmAudio) bgmAudio.volume = bgmVolume;
         if (titleBGM) titleBGM.volume = bgmVolume;
         
-        // 再生中のBGMがあれば即反映
         if (bgmAudio && !bgmAudio.paused) {
-            const wasPlaying = true;
             bgmAudio.pause();
-            bgmAudio.currentTime = bgmAudio.currentTime; // 位置維持
             bgmAudio.play().catch(() => {});
         }
     }
@@ -1070,7 +1062,7 @@ function updateBgmToggleIcon() {
 }
 
 async function startGame() {
-    await waitForAllAssets(); // 読み込み完了を待つ
+    await waitForAllAssets();
     
     initBoard();
     cpuColor = 3 - playerColor;
@@ -1254,8 +1246,7 @@ async function fetchUpcomingStream() {
 
 async function init() {
     initBoard();
-    await waitForAllAssets(); // ここで全アセット読み込みを待機
-    loadImages(); // すでに待機済みなので即時
+    await waitForAllAssets();
     initAudio();
     createStrengthSelect();
     createColorSelect();
