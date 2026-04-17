@@ -70,7 +70,7 @@
             width: 100%; height: 100%; z-index: 3;
         }
 
-        /* PC版：左（自分）→ 盤 → 右（相手） */
+        /* ====================== PC版（一切変更なし） ====================== */
         #board-container { 
             position: relative; 
             margin: 25px auto 70px; 
@@ -101,19 +101,20 @@
             .opponent-info { order: 3; }
         }
 
-        /* スマホ縦版 */
+        /* ====================== スマホ版修正 ====================== */
         @media (max-width: 768px) {
             #board-container { 
-                width: 92vmin !important; 
-                height: 92vmin !important; 
-                margin: 12px auto 20px !important; 
+                width: 86vmin !important; 
+                height: 86vmin !important; 
+                margin: 92px auto 20px !important; 
                 border-width: 13px; 
                 padding: 10px; 
             }
             
+            /* アイコンを盤の上部に確実に配置（被り防止） */
             .icon-bar {
-                width: 92vmin;
-                margin: 0 auto 10px;
+                width: 86vmin;
+                margin: 8px auto 18px !important;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -136,6 +137,9 @@
                 gap: 10px;
             }
             .status-bar { font-size: 1.3rem; padding: 16px; }
+            
+            /* ヘッダーと盤の被りを防止 */
+            .game-header { padding: 12px 18px; }
         }
 
         canvas { 
@@ -350,7 +354,7 @@
         
         <div class="game-content">
             
-            <!-- PC版：左から 自分のアイコン → 盤面 → 相手のアイコン -->
+            <!-- PC版 -->
             <div class="side-info player-info" id="player-info-pc">
                 <div class="char-img" id="player-char-img-pc"></div>
                 <div class="side-label" id="player-label-pc">YOU</div>
@@ -365,7 +369,7 @@
                 <div class="side-label" id="opponent-label-pc">ENEMY</div>
             </div>
             
-            <!-- スマホ版：盤の上部に横並び（自分左・相手右） -->
+            <!-- スマホ版アイコン（盤の上部） -->
             <div class="icon-bar" id="icon-bar-mobile">
                 <div class="side-info player-info" id="player-info-mobile">
                     <div class="char-img" id="player-char-img-mobile"></div>
@@ -742,7 +746,7 @@ function startScoreAnimation(blackCount, whiteCount) {
     
     if (drumRoalAudio) {
         drumRoalAudio.currentTime = 0;
-        playSound(drumRoalAudio);
+        drumRoalAudio.play().catch(() => {});
     }
     
     let blackPlaced = 0, whitePlaced = 0;
@@ -772,13 +776,13 @@ function startScoreAnimation(blackCount, whiteCount) {
         if (didPlace) {
             setTimeout(placeNext, interval);
         } else {
+            // drum_roolが終わったらor4秒経ったら進む（スマホフリーズ対策）
             if (drumRoalAudio) {
-                const checkEnded = () => {
-                    if (drumRoalAudio.ended) {
-                        showWinLoseOverlayAndProceed();
-                    } else setTimeout(checkEnded, 40);
+                const timeoutId = setTimeout(() => showWinLoseOverlayAndProceed(), 4000);
+                drumRoalAudio.onended = () => {
+                    clearTimeout(timeoutId);
+                    showWinLoseOverlayAndProceed();
                 };
-                checkEnded();
             } else {
                 showWinLoseOverlayAndProceed();
             }
@@ -932,7 +936,14 @@ function setupEvents() {
     document.getElementById('option-btn').addEventListener('click', () => { modalOpenedFrom = 'game'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'inline-block'; });
     document.getElementById('title-option-btn').addEventListener('click', () => { modalOpenedFrom = 'title'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'none'; });
     
-    document.getElementById('voice-volume-slider').addEventListener('input', e => {
+    // 音量スライダー即時反映強化
+    const voiceSlider = document.getElementById('voice-volume-slider');
+    voiceSlider.addEventListener('input', e => {
+        voiceVolume = parseFloat(e.target.value);
+        const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
+        allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
+    });
+    voiceSlider.addEventListener('change', e => {
         voiceVolume = parseFloat(e.target.value);
         const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
         allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
@@ -1013,19 +1024,16 @@ function startGame() {
     const pSrc = playerColor === 1 ? '黒5.png' : '白7.png';
     let cpuImgSrc = cpuStrength === 'よわい' ? 'easy.png' : cpuStrength === 'ふつう' ? 'normal.png' : 'hard.png';
     
-    // PC版アイコン
     document.getElementById('player-char-img-pc').innerHTML = `<img src="${pSrc}">`;
     document.getElementById('opponent-char-img-pc').innerHTML = `<img src="${cpuImgSrc}">`;
     document.getElementById('player-label-pc').innerHTML = `YOU (${playerColor === 1 ? '黒' : '白'})`;
     document.getElementById('opponent-label-pc').innerHTML = `ENEMY (${cpuStrength})`;
     
-    // スマホ版アイコン
     document.getElementById('player-char-img-mobile').innerHTML = `<img src="${pSrc}">`;
     document.getElementById('opponent-char-img-mobile').innerHTML = `<img src="${cpuImgSrc}">`;
     document.getElementById('player-label-mobile').innerHTML = `YOU (${playerColor === 1 ? '黒' : '白'})`;
     document.getElementById('opponent-label-mobile').innerHTML = `ENEMY (${cpuStrength})`;
     
-    // 表示切り替え
     if (window.innerWidth >= 769) {
         document.getElementById('player-info-pc').style.display = 'flex';
         document.getElementById('opponent-info-pc').style.display = 'flex';
