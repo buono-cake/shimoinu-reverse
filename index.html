@@ -101,7 +101,7 @@
             .opponent-info { order: 3; }
         }
 
-        /* ====================== スマホ版修正 ====================== */
+        /* ====================== スマホ版専用（ここだけ大幅修正） ====================== */
         @media (max-width: 768px) {
             #board-container { 
                 width: 86vmin !important; 
@@ -111,14 +111,16 @@
                 padding: 10px; 
             }
             
-            /* アイコンを盤の上部に確実に配置（被り防止） */
+            /* アイコンを盤の上部に確実に固定（下にずれないように大幅調整） */
             .icon-bar {
                 width: 86vmin;
-                margin: 8px auto 18px !important;
+                margin: 12px auto 18px !important; /* 上部余白を大きく確保 */
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 padding: 0 15px;
+                position: relative;
+                z-index: 25;
             }
             .icon-bar .side-info { text-align: center; }
             .icon-bar .char-img {
@@ -138,7 +140,7 @@
             }
             .status-bar { font-size: 1.3rem; padding: 16px; }
             
-            /* ヘッダーと盤の被りを防止 */
+            /* ヘッダーとボタンの被りを防止 */
             .game-header { padding: 12px 18px; }
         }
 
@@ -354,7 +356,7 @@
         
         <div class="game-content">
             
-            <!-- PC版 -->
+            <!-- PC版（一切変更なし） -->
             <div class="side-info player-info" id="player-info-pc">
                 <div class="char-img" id="player-char-img-pc"></div>
                 <div class="side-label" id="player-label-pc">YOU</div>
@@ -369,7 +371,7 @@
                 <div class="side-label" id="opponent-label-pc">ENEMY</div>
             </div>
             
-            <!-- スマホ版アイコン（盤の上部） -->
+            <!-- スマホ版専用アイコン（盤の上部に固定） -->
             <div class="icon-bar" id="icon-bar-mobile">
                 <div class="side-info player-info" id="player-info-mobile">
                     <div class="char-img" id="player-char-img-mobile"></div>
@@ -776,11 +778,11 @@ function startScoreAnimation(blackCount, whiteCount) {
         if (didPlace) {
             setTimeout(placeNext, interval);
         } else {
-            // drum_roolが終わったらor4秒経ったら進む（スマホフリーズ対策）
+            // スマホフリーズ対策：drum_roolが終わらなくても4秒で強制的に次へ
+            const fallback = setTimeout(() => showWinLoseOverlayAndProceed(), 4000);
             if (drumRoalAudio) {
-                const timeoutId = setTimeout(() => showWinLoseOverlayAndProceed(), 4000);
                 drumRoalAudio.onended = () => {
-                    clearTimeout(timeoutId);
+                    clearTimeout(fallback);
                     showWinLoseOverlayAndProceed();
                 };
             } else {
@@ -936,20 +938,22 @@ function setupEvents() {
     document.getElementById('option-btn').addEventListener('click', () => { modalOpenedFrom = 'game'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'inline-block'; });
     document.getElementById('title-option-btn').addEventListener('click', () => { modalOpenedFrom = 'title'; document.getElementById('option-modal').style.display = 'flex'; document.getElementById('btn-title-back').style.display = 'none'; });
     
-    // 音量スライダー即時反映強化
+    // 音量スライダー即時反映（スマホ対応強化）
     const voiceSlider = document.getElementById('voice-volume-slider');
-    voiceSlider.addEventListener('input', e => {
-        voiceVolume = parseFloat(e.target.value);
-        const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
-        allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
-    });
-    voiceSlider.addEventListener('change', e => {
-        voiceVolume = parseFloat(e.target.value);
-        const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
-        allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
-    });
+    const bgmSlider = document.getElementById('bgm-volume-slider');
     
-    document.getElementById('bgm-volume-slider').addEventListener('input', e => {
+    function updateVoiceVolume() {
+        voiceVolume = parseFloat(voiceSlider.value);
+        const allSE = [...reversePlayerSounds, ...reverseCpuSounds, winSeAudio, clapAudio, loseSeAudio, loseSakebiAudio, drumRoalAudio, drawSeAudio, drawVoiceAudio, ...winResultSoundsArray, ...loseResultSoundsArray, drawResultAudio];
+        allSE.forEach(audio => { if (audio) audio.volume = voiceVolume; });
+    }
+    
+    voiceSlider.addEventListener('input', updateVoiceVolume);
+    voiceSlider.addEventListener('change', updateVoiceVolume);
+    voiceSlider.addEventListener('pointerup', updateVoiceVolume);
+    voiceSlider.addEventListener('touchend', updateVoiceVolume);
+    
+    bgmSlider.addEventListener('input', e => {
         bgmVolume = parseFloat(e.target.value);
         if (bgmAudio) bgmAudio.volume = bgmVolume;
         if (titleBGM) titleBGM.volume = bgmVolume;
